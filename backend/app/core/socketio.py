@@ -1,5 +1,5 @@
-import structlog
 import socketio
+import structlog
 
 from app.config import get_settings
 
