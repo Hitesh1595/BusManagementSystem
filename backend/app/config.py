@@ -1,10 +1,23 @@
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# Search for .env in CWD first, then one directory up (repo root when running from backend/).
+_HERE = Path(__file__).resolve().parent  # backend/app/
+_ENV_PATHS = (
+    Path(".env"),          # wherever the process is launched from
+    _HERE.parent / ".env", # backend/.env (if placed there)
+    _HERE.parent.parent / ".env",  # repo root .env
+)
+
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=[str(p) for p in _ENV_PATHS],
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
     # Core
     APP_ENV: str = "dev"
