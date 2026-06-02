@@ -19,4 +19,5 @@ def register_error_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(RequestValidationError)
     async def _validation(_: Request, exc: RequestValidationError):
-        return JSONResponse(422, content=_envelope("validation_error", "Invalid input", {"errors": exc.errors()}))
+        details = {"errors": exc.errors()}
+        return JSONResponse(422, content=_envelope("validation_error", "Invalid input", details))
