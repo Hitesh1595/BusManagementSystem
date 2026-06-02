@@ -1,0 +1,150 @@
+<h2>YatraTrack Landing Page — Full Structure</h2>
+<p class="subtitle">7 sections + nav + footer. Confirm to proceed to building.</p>
+
+<style>
+.section-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 20px;
+}
+.sec {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  background: #fff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.sec:hover { border-color: #a5b4fc; background: #fafafe; }
+.sec.selected { border-color: #6366f1; background: #eef2ff; box-shadow: 0 0 0 3px #c7d2fe; }
+.sec-num {
+  width: 26px; height: 26px;
+  background: #eef2ff;
+  color: #4f46e5;
+  font-size: 12px;
+  font-weight: 800;
+  border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.sec-body { flex: 1; }
+.sec-body h4 { font-size: 13px; font-weight: 700; color: #1e1b4b; margin: 0 0 3px; }
+.sec-body p { font-size: 12px; color: #6b7280; margin: 0; line-height: 1.5; }
+.sec-tag {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 99px;
+  flex-shrink: 0;
+  align-self: center;
+}
+.tag-done { background: #dcfce7; color: #15803d; }
+.tag-new { background: #eef2ff; color: #4338ca; }
+.tag-anchor { background: #fef9c3; color: #854d0e; }
+
+.divider {
+  text-align: center;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #9ca3af;
+  margin: 6px 0 2px;
+}
+</style>
+
+<div class="section-list">
+
+  <div class="sec">
+    <div class="sec-num">↑</div>
+    <div class="sec-body">
+      <h4>Sticky Nav</h4>
+      <p>Logo (🛤 YatraTrack) · Features · Pricing · Schools anchor links · "School Register करें →" CTA button. Sticks to top on scroll.</p>
+    </div>
+    <span class="sec-tag tag-done">Designed ✓</span>
+  </div>
+
+  <div class="sec">
+    <div class="sec-num">1</div>
+    <div class="sec-body">
+      <h4>Hero</h4>
+      <p>"बच्चों का सफर, Safe & Tracked." · Hinglish subtitle · Two CTAs (Free Trial + Live Demo) · Trust badges (no app, 14-day trial, 1-day setup)</p>
+    </div>
+    <span class="sec-tag tag-done">Designed ✓</span>
+  </div>
+
+  <div class="sec">
+    <div class="sec-num">2</div>
+    <div class="sec-body">
+      <h4>Live Dashboard Preview</h4>
+      <p>Animated mockup of the real-time map with bus marker, route line, and 3 stat cards (active buses, students safe, alerts). Shows the product in action above the fold.</p>
+    </div>
+    <span class="sec-tag tag-done">Designed ✓</span>
+  </div>
+
+  <div class="sec">
+    <div class="sec-num">3</div>
+    <div class="sec-body">
+      <h4>Features <span style="font-weight:400;color:#9ca3af">#features</span></h4>
+      <p>6-card grid: Live GPS · Safety Alerts · Attendance · Fleet Management · No App Needed · Multi-School. Each card has indigo icon bg + title + 1-line description.</p>
+    </div>
+    <span class="sec-tag tag-anchor">Nav anchor</span>
+  </div>
+
+  <div class="sec">
+    <div class="sec-num">4</div>
+    <div class="sec-body">
+      <h4>How It Works — 3 Steps</h4>
+      <p>Step 1: School sets up routes & vehicles (5 min). Step 2: Parents join, see their child's assigned bus. Step 3: Driver starts trip → everyone tracks live. Clean numbered flow with icons.</p>
+    </div>
+    <span class="sec-tag tag-new">New</span>
+  </div>
+
+  <div class="sec">
+    <div class="sec-num">5</div>
+    <div class="sec-body">
+      <h4>Built for Everyone</h4>
+      <p>3 role cards: 🏫 School Admin · 👪 Parents · 🚌 Driver — each with their key benefit. Already designed.</p>
+    </div>
+    <span class="sec-tag tag-done">Designed ✓</span>
+  </div>
+
+  <div class="sec">
+    <div class="sec-num">6</div>
+    <div class="sec-body">
+      <h4>Pricing <span style="font-weight:400;color:#9ca3af">#pricing</span></h4>
+      <p>Single centered card: "Simple pricing for every school" → "Contact us for a custom quote" + two CTAs: Book a Demo · WhatsApp us. No tiers, no confusion.</p>
+    </div>
+    <span class="sec-tag tag-anchor">Nav anchor</span>
+  </div>
+
+  <div class="sec">
+    <div class="sec-num">7</div>
+    <div class="sec-body">
+      <h4>Schools / Waitlist <span style="font-weight:400;color:#9ca3af">#schools</span></h4>
+      <p>"Be the first school in your city" · City counter chips (Delhi, Mumbai, Bangalore, Pune…) · Email waitlist form + "Join Waitlist" button. FOMO + geographic social proof.</p>
+    </div>
+    <span class="sec-tag tag-anchor">Nav anchor</span>
+  </div>
+
+  <div class="sec">
+    <div class="sec-num">↓</div>
+    <div class="sec-body">
+      <h4>Footer</h4>
+      <p>Logo · tagline · Links (Features, Pricing, Contact) · "Made with ❤️ in India" · © 2026 YatraTrack</p>
+    </div>
+    <span class="sec-tag tag-new">New</span>
+  </div>
+
+</div>
+
+<div style="margin-top:16px;padding:14px 16px;background:#eef2ff;border-radius:8px;border:1px solid #c7d2fe;">
+  <p style="margin:0;font-size:13px;color:#3730a3;">
+    ✓ All indigo + white · Hinglish copy in hero · No pricing tiers · Waitlist section with city chips · Sticky nav with 3 anchor links. Approve to write the spec and start building.
+  </p>
+</div>

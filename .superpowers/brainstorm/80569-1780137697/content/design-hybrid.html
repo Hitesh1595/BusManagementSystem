@@ -1,0 +1,337 @@
+<h2>YatraTrack — Blended Direction</h2>
+<p class="subtitle">Option C warmth + Option A clean structure. Does this feel right?</p>
+
+<style>
+.preview-wrap {
+  margin-top: 20px;
+  border: 2px solid #e2e8f0;
+  border-radius: 14px;
+  overflow: hidden;
+  font-family: -apple-system, 'Inter', sans-serif;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.preview-wrap:hover { border-color: #f97316; box-shadow: 0 8px 30px rgba(249,115,22,0.12); }
+.preview-wrap.selected { border-color: #f97316; box-shadow: 0 0 0 3px #fed7aa; }
+
+/* NAV */
+.yt-nav {
+  background: #fff;
+  border-bottom: 1px solid #f1f0ee;
+  padding: 14px 28px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.yt-logo { font-size: 17px; font-weight: 800; color: #ea580c; letter-spacing: -0.5px; }
+.yt-logo span { color: #15803d; }
+.yt-nav-links { display: flex; gap: 20px; }
+.yt-nav-links a { font-size: 12px; color: #57534e; font-weight: 500; text-decoration: none; }
+.yt-nav-cta { background: #ea580c; color: #fff; font-size: 12px; font-weight: 700; padding: 7px 16px; border-radius: 8px; text-decoration: none; }
+
+/* HERO */
+.yt-hero {
+  background: #fff;
+  padding: 52px 28px 44px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.yt-hero::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 4px;
+  background: linear-gradient(90deg, #ea580c, #f59e0b, #ea580c);
+}
+.yt-india-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  color: #c2410c;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 99px;
+  margin-bottom: 18px;
+}
+.yt-hero h1 {
+  font-size: 32px;
+  font-weight: 800;
+  color: #1c1917;
+  line-height: 1.15;
+  margin: 0 0 6px;
+  letter-spacing: -0.8px;
+}
+.yt-hero h1 .orange { color: #ea580c; }
+.yt-hero h1 .green { color: #15803d; }
+.yt-hero .sub {
+  font-size: 13px;
+  color: #78716c;
+  margin: 0 auto 24px;
+  max-width: 420px;
+  line-height: 1.6;
+}
+.yt-btns { display: flex; justify-content: center; gap: 10px; margin-bottom: 32px; }
+.yt-btn-p {
+  background: #ea580c;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 10px 22px;
+  border-radius: 9px;
+  box-shadow: 0 4px 14px rgba(234,88,12,0.3);
+}
+.yt-btn-s {
+  background: #fff;
+  border: 1.5px solid #e7e5e4;
+  color: #44403c;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px 22px;
+  border-radius: 9px;
+}
+.yt-trust {
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+.yt-trust-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: #78716c;
+  font-weight: 500;
+}
+.yt-trust-item .dot { width: 5px; height: 5px; background: #22c55e; border-radius: 50%; }
+
+/* MAP MOCKUP */
+.yt-map-mock {
+  background: linear-gradient(160deg, #f0fdf4 0%, #fff7ed 100%);
+  margin: 0 28px 28px;
+  border-radius: 12px;
+  border: 1px solid #e7e5e4;
+  padding: 20px;
+  display: flex;
+  gap: 14px;
+}
+.yt-map-left {
+  flex: 1;
+  background: #fff;
+  border-radius: 8px;
+  border: 1px solid #e7e5e4;
+  min-height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+.yt-map-bg {
+  position: absolute; inset: 0;
+  background:
+    linear-gradient(rgba(219,234,254,0.4) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(219,234,254,0.4) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+.yt-bus-dot {
+  width: 28px; height: 28px;
+  background: #ea580c;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+  position: relative;
+  z-index: 1;
+  box-shadow: 0 0 0 6px rgba(234,88,12,0.15);
+}
+.yt-map-right {
+  width: 130px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.yt-stat-card {
+  background: #fff;
+  border-radius: 8px;
+  border: 1px solid #e7e5e4;
+  padding: 10px 12px;
+}
+.yt-stat-card .label { font-size: 10px; color: #a8a29e; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+.yt-stat-card .value { font-size: 18px; font-weight: 800; color: #1c1917; line-height: 1.1; }
+.yt-stat-card .value.orange { color: #ea580c; }
+.yt-stat-card .value.green { color: #15803d; }
+.yt-stat-card .hint { font-size: 10px; color: #78716c; }
+
+/* FEATURES */
+.yt-features {
+  padding: 28px 28px 20px;
+  background: #fafaf9;
+  border-top: 1px solid #f1f0ee;
+}
+.yt-features-head {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #a8a29e;
+  text-align: center;
+  margin-bottom: 16px;
+}
+.yt-feat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+.yt-feat {
+  background: #fff;
+  border: 1px solid #e7e5e4;
+  border-radius: 10px;
+  padding: 14px;
+}
+.yt-feat .icon { font-size: 20px; margin-bottom: 6px; }
+.yt-feat h4 { font-size: 12px; font-weight: 700; color: #1c1917; margin: 0 0 3px; }
+.yt-feat p { font-size: 11px; color: #78716c; margin: 0; line-height: 1.4; }
+
+/* AUDIENCE */
+.yt-audience {
+  padding: 20px 28px 28px;
+  background: #fff;
+  border-top: 1px solid #f1f0ee;
+}
+.yt-aud-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
+.yt-aud {
+  border-radius: 10px;
+  padding: 14px;
+  border: 1px solid transparent;
+}
+.yt-aud.admin { background: #fff7ed; border-color: #fed7aa; }
+.yt-aud.parent { background: #f0fdf4; border-color: #bbf7d0; }
+.yt-aud.driver { background: #eff6ff; border-color: #bfdbfe; }
+.yt-aud .role { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+.admin .role { color: #c2410c; }
+.parent .role { color: #15803d; }
+.driver .role { color: #1d4ed8; }
+.yt-aud p { font-size: 11px; color: #44403c; margin: 0; line-height: 1.4; }
+</style>
+
+<div class="preview-wrap" data-choice="hybrid" onclick="toggleSelect(this)">
+
+  <!-- Nav -->
+  <div class="yt-nav">
+    <span class="yt-logo">🛤 Yatra<span>Track</span></span>
+    <div class="yt-nav-links">
+      <a href="#">Features</a>
+      <a href="#">Pricing</a>
+      <a href="#">Schools</a>
+    </div>
+    <a class="yt-nav-cta" href="#">School Register करें →</a>
+  </div>
+
+  <!-- Hero -->
+  <div class="yt-hero">
+    <div class="yt-india-badge">🇮🇳 Made for Indian Schools</div>
+    <h1>
+      बच्चों का सफर,<br>
+      <span class="orange">Safe</span> &amp; <span class="green">Tracked.</span>
+    </h1>
+    <p class="sub">Real-time GPS tracking, boarding alerts aur attendance — sab ek jagah. Parents aur school admins dono ke liye.</p>
+    <div class="yt-btns">
+      <span class="yt-btn-p">Free Trial शुरू करें</span>
+      <span class="yt-btn-s">Live Demo देखें →</span>
+    </div>
+    <div class="yt-trust">
+      <span class="yt-trust-item"><span class="dot"></span> No app download needed</span>
+      <span class="yt-trust-item"><span class="dot"></span> 14-day free trial</span>
+      <span class="yt-trust-item"><span class="dot"></span> Setup in 1 day</span>
+    </div>
+  </div>
+
+  <!-- Map mock -->
+  <div class="yt-map-mock">
+    <div class="yt-map-left">
+      <div class="yt-map-bg"></div>
+      <div class="yt-bus-dot">🚌</div>
+    </div>
+    <div class="yt-map-right">
+      <div class="yt-stat-card">
+        <div class="label">Active Buses</div>
+        <div class="value orange">12</div>
+        <div class="hint">Live right now</div>
+      </div>
+      <div class="yt-stat-card">
+        <div class="label">Students Safe</div>
+        <div class="value green">348</div>
+        <div class="hint">Boarded today</div>
+      </div>
+      <div class="yt-stat-card">
+        <div class="label">Alerts</div>
+        <div class="value">0</div>
+        <div class="hint">All clear ✓</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Features -->
+  <div class="yt-features">
+    <div class="yt-features-head">Why schools choose YatraTrack</div>
+    <div class="yt-feat-grid">
+      <div class="yt-feat">
+        <div class="icon">📍</div>
+        <h4>Live GPS Tracking</h4>
+        <p>Parents see bus location in real-time on map</p>
+      </div>
+      <div class="yt-feat">
+        <div class="icon">🔔</div>
+        <h4>Safety Alerts</h4>
+        <p>Instant alert if child doesn't board or isn't dropped</p>
+      </div>
+      <div class="yt-feat">
+        <div class="icon">✅</div>
+        <h4>Attendance</h4>
+        <p>Driver marks boarding stop-by-stop, parents notified</p>
+      </div>
+      <div class="yt-feat">
+        <div class="icon">🚌</div>
+        <h4>Fleet Management</h4>
+        <p>Vehicles, routes, drivers — all managed from one dashboard</p>
+      </div>
+      <div class="yt-feat">
+        <div class="icon">📱</div>
+        <h4>No App Needed</h4>
+        <p>Works in mobile browser, nothing to install</p>
+      </div>
+      <div class="yt-feat">
+        <div class="icon">🏫</div>
+        <h4>Multi-School</h4>
+        <p>Manage multiple schools from a single admin panel</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Audience -->
+  <div class="yt-audience">
+    <div class="yt-aud-grid">
+      <div class="yt-aud admin">
+        <div class="role">🏫 School Admin</div>
+        <p>Fleet overview, route management, driver assignment — complete control.</p>
+      </div>
+      <div class="yt-aud parent">
+        <div class="role">👪 Parents</div>
+        <p>Track your child's bus live. Get alerted the moment they board.</p>
+      </div>
+      <div class="yt-aud driver">
+        <div class="role">🚌 Driver</div>
+        <p>Today's route, stop list, attendance marking — simple driver view.</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div style="margin-top:16px;padding:14px 16px;background:#fff7ed;border-radius:8px;border:1px solid #fed7aa;">
+  <p style="margin:0;font-size:13px;color:#7c2d12;">
+    This is a full landing page preview — nav, hero, live map widget, features grid, and role cards. Click to confirm this direction, then I'll ask one more question about sections before we build.
+  </p>
+</div>

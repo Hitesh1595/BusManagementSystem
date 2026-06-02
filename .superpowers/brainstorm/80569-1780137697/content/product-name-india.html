@@ -1,0 +1,157 @@
+<h2>India-Rooted Name Options</h2>
+<p class="subtitle">Hindi / Sanskrit words blended with English — click what feels right</p>
+
+<style>
+.name-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+}
+.name-card {
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  background: #fff;
+}
+.name-card:hover { border-color: #f97316; background: #fff7ed; }
+.name-card.selected { border-color: #f97316; background: #fff7ed; box-shadow: 0 0 0 3px #fed7aa; }
+.badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 99px;
+  margin-bottom: 10px;
+}
+.badge.sanskrit { background: #fef3c7; color: #92400e; }
+.badge.hindi { background: #fce7f3; color: #9d174d; }
+.badge.blend { background: #ede9fe; color: #5b21b6; }
+.name-card h3 {
+  font-size: 26px;
+  font-weight: 800;
+  margin: 0 0 2px;
+  color: #1e293b;
+  letter-spacing: -0.5px;
+}
+.meaning {
+  font-size: 12px;
+  font-weight: 600;
+  color: #f97316;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.tagline {
+  font-size: 13px;
+  color: #64748b;
+  font-style: italic;
+  margin-bottom: 10px;
+}
+.name-card p {
+  font-size: 13px;
+  color: #475569;
+  margin: 0 0 12px;
+  line-height: 1.5;
+}
+.meta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.meta-chip {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+.domain-good { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+.domain-medium { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+.risk-low { background: #f0f9ff; color: #0369a1; border: 1px solid #bae6fd; }
+</style>
+
+<div class="name-cards">
+
+  <div class="name-card" data-choice="vidyapath" onclick="toggleSelect(this)">
+    <span class="badge sanskrit">Sanskrit</span>
+    <h3>VidyaPath</h3>
+    <div class="meaning">Vidya = Knowledge · Path = Road/Way</div>
+    <div class="tagline">"The road to every school, made safe."</div>
+    <p>Directly means "path to education." Clean, professional, resonates with school admins and parents across India. Easy to pronounce in all Indian languages.</p>
+    <div class="meta">
+      <span class="meta-chip domain-good">vidyapath.in ✓ likely free</span>
+      <span class="meta-chip risk-low">Low trademark risk</span>
+    </div>
+  </div>
+
+  <div class="name-card" data-choice="safarmitra" onclick="toggleSelect(this)">
+    <span class="badge hindi">Hindi</span>
+    <h3>SafarMitra</h3>
+    <div class="meaning">Safar = Journey · Mitra = Friend</div>
+    <div class="tagline">"Your child's trusted journey companion."</div>
+    <p>Warm and human. "Mitra" (friend) builds trust with parents. "Safar" is universally understood across Hindi, Urdu, and many regional languages. Very memorable.</p>
+    <div class="meta">
+      <span class="meta-chip domain-good">safarmitra.com ✓ likely free</span>
+      <span class="meta-chip risk-low">Low trademark risk</span>
+    </div>
+  </div>
+
+  <div class="name-card" data-choice="pathprahari" onclick="toggleSelect(this)">
+    <span class="badge sanskrit">Sanskrit</span>
+    <h3>PathPrahari</h3>
+    <div class="meaning">Path = Road · Prahari = Guardian/Watchman</div>
+    <div class="tagline">"Guarding every road your child travels."</div>
+    <p>Strong safety connotation. Prahari = one who keeps watch, traditionally used for protectors/guards. Powerful brand identity for a safety-first platform.</p>
+    <div class="meta">
+      <span class="meta-chip domain-good">pathprahari.in ✓ likely free</span>
+      <span class="meta-chip risk-low">Low trademark risk</span>
+    </div>
+  </div>
+
+  <div class="name-card" data-choice="yatratrack" onclick="toggleSelect(this)">
+    <span class="badge blend">Hindi + English</span>
+    <h3>YatraTrack</h3>
+    <div class="meaning">Yatra = Journey/Voyage · Track = GPS Tracking</div>
+    <div class="tagline">"Track every yatra, protect every child."</div>
+    <p>Modern bilingual name — Yatra is widely known (also from IRCTC/MakeMyTrip era), so it's instantly familiar. Track makes the tech purpose clear. Startup-y feel.</p>
+    <div class="meta">
+      <span class="meta-chip domain-good">yatratrack.app ✓ likely free</span>
+      <span class="meta-chip risk-low">Low trademark risk</span>
+    </div>
+  </div>
+
+  <div class="name-card" data-choice="vidyavahan" onclick="toggleSelect(this)">
+    <span class="badge sanskrit">Sanskrit</span>
+    <h3>VidyaVahan</h3>
+    <div class="meaning">Vidya = Education · Vahan = Vehicle</div>
+    <div class="tagline">"The vehicle that carries tomorrow's future."</div>
+    <p>Poetic and literal at once — a "school vehicle" in Sanskrit. Vahan is used in many Indian language contexts (Vahan is also a Govt. vehicle portal, so name is familiar but distinct).</p>
+    <div class="meta">
+      <span class="meta-chip domain-good">vidyavahan.in ✓ likely free</span>
+      <span class="meta-chip risk-low">Low trademark risk</span>
+    </div>
+  </div>
+
+  <div class="name-card" data-choice="surakshpath" onclick="toggleSelect(this)">
+    <span class="badge sanskrit">Sanskrit</span>
+    <h3>SurakshPath</h3>
+    <div class="meaning">Suraksh = Safe/Secure · Path = Road</div>
+    <div class="tagline">"Every road, secured."</div>
+    <p>Direct meaning: "safe road." Suraksha is the most common Indian word for safety/security, used in insurance, defence, banking. Instantly trustworthy to Indian audiences.</p>
+    <div class="meta">
+      <span class="meta-chip domain-good">surakshpath.app ✓ likely free</span>
+      <span class="meta-chip risk-low">Low trademark risk</span>
+    </div>
+  </div>
+
+</div>
+
+<div style="margin-top:20px;padding:14px 16px;background:#fff7ed;border-radius:8px;border:1px solid #fed7aa;">
+  <p style="margin:0;font-size:13px;color:#7c2d12;">
+    🪔 <strong>My pick:</strong> <strong>SafarMitra</strong> — warm, universally understood across India, memorable, and the "friend" angle builds parent trust. <strong>VidyaPath</strong> is the most professional choice for B2B school admin pitches.
+  </p>
+</div>

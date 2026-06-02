@@ -1,0 +1,144 @@
+<h2>Product Name Options</h2>
+<p class="subtitle">Click one (or a few) that resonate — we'll refine from there</p>
+
+<style>
+.name-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+}
+.name-card {
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  background: #fff;
+  position: relative;
+}
+.name-card:hover { border-color: #6366f1; background: #fafafe; }
+.name-card.selected { border-color: #6366f1; background: #eef2ff; box-shadow: 0 0 0 3px #c7d2fe; }
+.name-card .badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 99px;
+  margin-bottom: 10px;
+}
+.badge.safe { background: #dcfce7; color: #166534; }
+.badge.tech { background: #dbeafe; color: #1e40af; }
+.badge.brand { background: #fce7f3; color: #9d174d; }
+.name-card h3 {
+  font-size: 26px;
+  font-weight: 800;
+  margin: 0 0 4px;
+  color: #1e293b;
+  letter-spacing: -0.5px;
+}
+.tagline {
+  font-size: 13px;
+  color: #64748b;
+  font-style: italic;
+  margin-bottom: 12px;
+}
+.name-card p {
+  font-size: 13px;
+  color: #475569;
+  margin: 0 0 12px;
+  line-height: 1.5;
+}
+.meta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.meta-chip {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+.domain-good { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+.domain-medium { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+.risk-low { background: #f0f9ff; color: #0369a1; border: 1px solid #bae6fd; }
+</style>
+
+<div class="name-cards">
+
+  <div class="name-card" data-choice="saferoute" onclick="toggleSelect(this)">
+    <span class="badge safe">Safety-first</span>
+    <h3>SafeRoute</h3>
+    <div class="tagline">"Every route. Every child. Safe."</div>
+    <p>Combines the two core values — safety of children and route management. Clean, professional, instantly understood by school admins.</p>
+    <div class="meta">
+      <span class="meta-chip domain-good">saferoute.app ✓ likely free</span>
+      <span class="meta-chip risk-low">Low trademark risk</span>
+    </div>
+  </div>
+
+  <div class="name-card" data-choice="busbeacon" onclick="toggleSelect(this)">
+    <span class="badge tech">Tech-forward</span>
+    <h3>BusBeacon</h3>
+    <div class="tagline">"Your child's journey, always visible."</div>
+    <p>Beacon = GPS signal + guiding light. Strong visual metaphor. Works well for real-time tracking positioning. Memorable and unique.</p>
+    <div class="meta">
+      <span class="meta-chip domain-good">busbeacon.io ✓ likely free</span>
+      <span class="meta-chip risk-low">Low trademark risk</span>
+    </div>
+  </div>
+
+  <div class="name-card" data-choice="rideguard" onclick="toggleSelect(this)">
+    <span class="badge safe">Safety-first</span>
+    <h3>RideGuard</h3>
+    <div class="tagline">"Guarding every ride to school."</div>
+    <p>Guard = protection + monitoring. Resonates with parents. Strong brand identity around child safety. Works for both bus and van fleets.</p>
+    <div class="meta">
+      <span class="meta-chip domain-good">rideguard.app ✓ likely free</span>
+      <span class="meta-chip risk-low">Low trademark risk</span>
+    </div>
+  </div>
+
+  <div class="name-card" data-choice="routify" onclick="toggleSelect(this)">
+    <span class="badge tech">SaaS-style</span>
+    <h3>Routify</h3>
+    <div class="tagline">"Smart school transport, simplified."</div>
+    <p>Modern SaaS naming pattern (-ify). Feels tech-forward, scalable, startup-y. Good for B2B school admin pitch. Less emotionally "safety" though.</p>
+    <div class="meta">
+      <span class="meta-chip domain-medium">routify.io — check first</span>
+      <span class="meta-chip risk-low">Low trademark risk</span>
+    </div>
+  </div>
+
+  <div class="name-card" data-choice="fleetnest" onclick="toggleSelect(this)">
+    <span class="badge brand">Brand-play</span>
+    <h3>FleetNest</h3>
+    <div class="tagline">"Your school fleet, all in one nest."</div>
+    <p>Nest = central hub, organized, cozy (child-safe connotation). Fleet = vehicles. Appeals to school admins managing multiple buses. Premium feel.</p>
+    <div class="meta">
+      <span class="meta-chip domain-good">fleetnest.io ✓ likely free</span>
+      <span class="meta-chip risk-low">Low trademark risk</span>
+    </div>
+  </div>
+
+  <div class="name-card" data-choice="safehop" onclick="toggleSelect(this)">
+    <span class="badge brand">Friendly</span>
+    <h3>SafeHop</h3>
+    <div class="tagline">"Every hop, every stop, every child safe."</div>
+    <p>Hop = bus stops (children "hop on, hop off"). Playful but still safety-focused. Friendly tone, works well for parent-facing marketing. Very unique.</p>
+    <div class="meta">
+      <span class="meta-chip domain-good">safehop.app ✓ likely free</span>
+      <span class="meta-chip risk-low">Low trademark risk</span>
+    </div>
+  </div>
+
+</div>
+
+<div style="margin-top:20px;padding:14px 16px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;">
+  <p style="margin:0;font-size:13px;color:#64748b;">
+    💡 <strong>My pick:</strong> <strong>BusBeacon</strong> — unique, strong metaphor (GPS signal + guiding light), memorable, and works well visually for a logo. <strong>SafeRoute</strong> is the safest choice if you want something instantly clear to school admins.
+  </p>
+</div>
