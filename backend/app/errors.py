@@ -15,9 +15,15 @@ def _envelope(code: str, message: str, details: dict) -> dict:
 def register_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(AppError)
     async def _app_error(_: Request, exc: AppError):
-        return JSONResponse(exc.status, content=_envelope(exc.code, exc.message, exc.details))
+        return JSONResponse(
+            status_code=exc.status,
+            content=_envelope(exc.code, exc.message, exc.details),
+        )
 
     @app.exception_handler(RequestValidationError)
     async def _validation(_: Request, exc: RequestValidationError):
         details = {"errors": exc.errors()}
-        return JSONResponse(422, content=_envelope("validation_error", "Invalid input", details))
+        return JSONResponse(
+            status_code=422,
+            content=_envelope("validation_error", "Invalid input", details),
+        )
