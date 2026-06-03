@@ -7,13 +7,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
+from app.auth import router as auth_router
 from app.config import get_settings
 from app.core.logging import configure_logging
 from app.core.scheduler import shutdown_scheduler, start_gps_flusher, start_scheduler
 from app.core.socketio import sio_app
 from app.database import engine
 from app.errors import register_error_handlers
-from app.middleware import RequestContextMiddleware
+from app.middleware import RateLimitMiddleware, RequestContextMiddleware
 from app.redis_client import redis_ok
 
 settings = get_settings()
@@ -45,6 +46,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(RateLimitMiddleware)
 app.add_middleware(RequestContextMiddleware)
 register_error_handlers(app)
 
@@ -81,11 +83,12 @@ async def health() -> JSONResponse:
     )
 
 
+app.include_router(auth_router.router)
+
 # Mount Socket.IO last so REST routes win path matching.
 app.mount("/socket.io", sio_app)
 
-# Routers are registered per chunk — placeholders below are added as chunks land:
-# app.include_router(auth.router)
+# Routers added per chunk:
 # app.include_router(schools.router)
 # app.include_router(vehicles.router)
 # app.include_router(routes.router)
