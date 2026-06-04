@@ -1,0 +1,27 @@
+# Never copy the host virtualenv into the image — it has host-specific
+# interpreter symlinks/shebangs and would clobber the venv built in the
+# builder stage. The image builds its own venv via `uv sync`.
+.venv/
+venv/
+
+# Python caches / artifacts
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Secrets — injected at runtime via compose env_file, not baked into the image
+.env
+.env.*
+
+# VCS / editor / OS
+.git/
+.gitignore
+.idea/
+.vscode/
+.DS_Store
+*.log

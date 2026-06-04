@@ -29,11 +29,15 @@ COPY --from=builder /app/.venv /app/.venv
 # Copy application source
 COPY . .
 
-# Activate venv by prepending it to PATH
+# Put the venv on PATH (convenience for `docker exec`/interactive use).
 ENV PATH="/app/.venv/bin:$PATH"
+ENV VIRTUAL_ENV="/app/.venv"
 
-# Run alembic upgrade then start uvicorn
-CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+# Run alembic upgrade then start uvicorn.
+# Use ABSOLUTE venv paths — do not rely on PATH activation for the default CMD.
+# (Under cross-arch emulation the baked ENV PATH is not always honored for the
+# image's own CMD, even though it is for an explicitly-passed command.)
+CMD ["sh", "-c", "/app/.venv/bin/alembic upgrade head && /app/.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000"]
 
 EXPOSE 8000
 
