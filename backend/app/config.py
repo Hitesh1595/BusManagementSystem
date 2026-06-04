@@ -41,6 +41,11 @@ class Settings(BaseSettings):
     ACCOUNT_LOCKOUT_TTL_MIN: int = 15
     BCRYPT_ROUNDS: int = 12
 
+    # Rate limiting — Redis sliding window (spec §9.4)
+    RATELIMIT_WINDOW_SEC: int = 60
+    RATELIMIT_AUTH_PER_MIN: int = 5      # /api/v1/auth/* per client IP
+    RATELIMIT_API_PER_MIN: int = 100     # all other routes per user (IP fallback)
+
     # Email
     RESEND_API_KEY: str = ""
     EMAIL_FROM: str = "YatraTrack <no-reply@yatratrack.in>"

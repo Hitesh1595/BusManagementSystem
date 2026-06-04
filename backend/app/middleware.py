@@ -14,9 +14,11 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
 
+from app.config import get_settings
 from app.redis_client import get_redis
 
 log = structlog.get_logger(__name__)
+settings = get_settings()
 
 # ---------------------------------------------------------------------------
 # Request context middleware
@@ -135,7 +137,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
         if path.startswith("/api/v1/auth"):
             key = f"ratelimit:auth:{client_ip}"
-            allowed = await _check_rate_limit(key, window_sec=60, limit=5)
+            allowed = await _check_rate_limit(
+                key, window_sec=settings.RATELIMIT_WINDOW_SEC, limit=settings.RATELIMIT_AUTH_PER_MIN
+            )
         else:
             # For API routes use user-id from JWT if present, else fall back to IP
             auth = request.headers.get("authorization", "")
@@ -154,7 +158,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             else:
                 identifier = client_ip
             key = f"ratelimit:api:{identifier}"
-            allowed = await _check_rate_limit(key, window_sec=60, limit=100)
+            allowed = await _check_rate_limit(
+                key, window_sec=settings.RATELIMIT_WINDOW_SEC, limit=settings.RATELIMIT_API_PER_MIN
+            )
 
         if not allowed:
             log.warning("ratelimit.rejected", path=path, key=key)
