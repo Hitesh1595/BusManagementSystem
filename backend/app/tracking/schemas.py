@@ -1,0 +1,133 @@
+"""
+Trip + GPS Pydantic schemas — spec §8.7.
+"""
+
+from __future__ import annotations
+
+import uuid
+from datetime import date, datetime
+from typing import Any, Literal
+
+from pydantic import BaseModel
+
+from app.core.pagination import Page
+
+TripStatusEnum = Literal[
+    "scheduled",
+    "in_progress",
+    "pending_safeguard_check",
+    "completed",
+    "cancelled",
+    "incident",
+]
+SlotEnum = Literal["morning", "evening"]
+
+
+# ---------------------------------------------------------------------------
+# Request bodies
+# ---------------------------------------------------------------------------
+
+
+class TripCreateIn(BaseModel):
+    """Manual trip creation — admin."""
+
+    route_id: uuid.UUID
+    scheduled_date: date
+    slot: SlotEnum
+
+
+class TripGenerateIn(BaseModel):
+    """Bulk generation — admin."""
+
+    scheduled_date: date
+
+
+# ---------------------------------------------------------------------------
+# Nested sub-objects in TripOut
+# ---------------------------------------------------------------------------
+
+
+class DriverBrief(BaseModel):
+    id: uuid.UUID
+    full_name: str
+    phone: str | None  # null for now — conditional disclosure is Chunk 5
+
+    model_config = {"from_attributes": True}
+
+
+class VehicleBrief(BaseModel):
+    id: uuid.UUID
+    plate_number: str
+
+    model_config = {"from_attributes": True}
+
+
+class RouteBrief(BaseModel):
+    id: uuid.UUID
+    name: str
+    schedule_type: str
+
+    model_config = {"from_attributes": True}
+
+
+# ---------------------------------------------------------------------------
+# Trip output
+# ---------------------------------------------------------------------------
+
+
+class TripOut(BaseModel):
+    id: uuid.UUID
+    school_id: uuid.UUID
+    route_id: uuid.UUID
+    driver_id: uuid.UUID
+    vehicle_id: uuid.UUID
+    status: str
+    scheduled_date: date
+    scheduled_departure_at: datetime
+    slot: str
+    current_stop_order: int | None
+    started_at: datetime | None
+    ended_at: datetime | None
+    safeguarding_checked: bool
+    original_driver_id: uuid.UUID | None
+    reassigned_at: datetime | None
+    reassignment_reason: str | None
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class TripDetail(TripOut):
+    """Enriched detail view — includes nested route, vehicle, driver."""
+
+    route: RouteBrief | None = None
+    vehicle: VehicleBrief | None = None
+    driver: DriverBrief | None = None
+
+
+TripPage = Page[TripOut]
+
+
+# ---------------------------------------------------------------------------
+# GPS log output (GeoJSON LineString)
+# ---------------------------------------------------------------------------
+
+
+class GpsLogGeoJSON(BaseModel):
+    """
+    Minimal GeoJSON Feature wrapping a LineString of the trip's GPS trace.
+    """
+
+    type: str = "Feature"
+    geometry: dict[str, Any]
+    properties: dict[str, Any]
+
+
+# ---------------------------------------------------------------------------
+# Generation result
+# ---------------------------------------------------------------------------
+
+
+class GenerateResult(BaseModel):
+    created: int

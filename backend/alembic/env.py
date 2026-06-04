@@ -34,9 +34,9 @@ from app.database import Base  # noqa: E402, F401
 from app.routes import models as _route_models  # noqa: E402, F401
 from app.schools import models as _school_models  # noqa: E402, F401
 from app.students import models as _student_models  # noqa: E402, F401
+from app.tracking import models as _tracking_models  # noqa: E402, F401
 from app.vehicles import models as _vehicle_models  # noqa: E402, F401
 
-# from app.tracking import models as _tracking_models  # noqa: F401
 # from app.notifications import models as _notif_models  # noqa: F401
 
 target_metadata = Base.metadata
