@@ -36,17 +36,79 @@ def from_point(geom) -> dict[str, float] | None:
     """
     Convert a GeoAlchemy2 WKBElement (returned from DB) or WKTElement
     to a plain dict {lat, lng}.  Returns None if geom is None.
+
+    Parses WKB natively (no Shapely dependency).
+    Supports EWKB (with SRID flag) and plain WKB, both little-endian and big-endian.
+    Falls back to WKT parsing for WKTElement.
     """
     if geom is None:
         return None
     try:
-        from geoalchemy2.shape import to_shape  # type: ignore[import-untyped]
+        from geoalchemy2.elements import WKBElement, WKTElement  # type: ignore[import-untyped]
 
-        shape = to_shape(geom)
-        return {"lat": shape.y, "lng": shape.x}
+        if isinstance(geom, WKTElement):
+            # WKT format: "SRID=4326;POINT(lng lat)" or "POINT(lng lat)"
+            wkt: str = geom.desc
+            # Strip SRID prefix if present
+            if ";" in wkt:
+                wkt = wkt.split(";", 1)[1]
+            wkt = wkt.strip()
+            # Extract coords from POINT(x y)
+            inner = wkt[wkt.index("(") + 1 : wkt.index(")")]
+            parts = inner.split()
+            if len(parts) >= 2:
+                return {"lat": float(parts[1]), "lng": float(parts[0])}
+            return None
+
+        if isinstance(geom, WKBElement):
+            # Decode hex string or bytes
+            raw = geom.data
+            if isinstance(raw, str):
+                data = bytes.fromhex(raw)
+            elif isinstance(raw, memoryview):
+                data = bytes(raw)
+            else:
+                data = bytes(raw)
+
+            return _parse_wkb_point(data)
+
+        # Unknown type — try repr-based fallback
+        log.warning("geo.from_point.unknown_type", geom_type=type(geom).__name__)
+        return None
     except Exception:
         log.warning("geo.from_point.failed", geom=repr(geom))
         return None
+
+
+def _parse_wkb_point(data: bytes) -> dict[str, float] | None:
+    """
+    Parse a WKB/EWKB Point to {lat, lng}.
+
+    WKB layout (21 bytes plain, 25 bytes EWKB with SRID):
+      [0]      byte_order: 0x00=big-endian, 0x01=little-endian
+      [1..4]   geometry_type (uint32) — may have 0x20000000 SRID flag set
+      [5..8]   SRID if flag set (uint32) — only in EWKB
+      [5/9..12/16]  X (double)
+      [13/17..20/24] Y (double)
+    """
+    import struct
+
+    if len(data) < 21:
+        return None
+
+    byte_order = data[0]
+    endian = "<" if byte_order == 1 else ">"
+
+    geom_type = struct.unpack_from(f"{endian}I", data, 1)[0]
+    has_srid = bool(geom_type & 0x20000000)
+    coord_offset = 9 if has_srid else 5
+
+    if len(data) < coord_offset + 16:
+        return None
+
+    x = struct.unpack_from(f"{endian}d", data, coord_offset)[0]      # longitude
+    y = struct.unpack_from(f"{endian}d", data, coord_offset + 8)[0]  # latitude
+    return {"lat": y, "lng": x}
 
 
 # ---------------------------------------------------------------------------
@@ -61,7 +123,8 @@ def linestring_from_stops(points: list[tuple[float, float]]) -> WKTElement | Non
     """
     if len(points) < 2:
         return None
-    coords = " ".join(f"{lng} {lat}" for lat, lng in points)
+    # WKT requires comma-separated point pairs: LINESTRING(lng1 lat1, lng2 lat2, ...)
+    coords = ", ".join(f"{lng} {lat}" for lat, lng in points)
     return WKTElement(f"SRID=4326;LINESTRING({coords})", srid=4326)
 
 

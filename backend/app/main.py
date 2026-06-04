@@ -16,6 +16,7 @@ from app.database import engine
 from app.errors import register_error_handlers
 from app.middleware import RateLimitMiddleware, RequestContextMiddleware
 from app.redis_client import redis_ok
+from app.routes.router import router as routes_router
 from app.schools import router as schools_router
 from app.vehicles.router import drivers_router, vehicles_router
 
@@ -89,11 +90,11 @@ app.include_router(auth_router.router)
 app.include_router(schools_router.router)
 app.include_router(vehicles_router)
 app.include_router(drivers_router)
+app.include_router(routes_router)
 
 # Mount Socket.IO last so REST routes win path matching.
 app.mount("/socket.io", sio_app)
 
 # Routers added per chunk:
-# app.include_router(routes.router)
 # app.include_router(tracking.router)
 # app.include_router(notifications.router)
