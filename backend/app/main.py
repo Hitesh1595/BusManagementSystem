@@ -73,8 +73,62 @@ async def health() -> JSONResponse:
 
     redis_status = "connected" if await redis_ok() else "degraded"
 
-    # last_gps_event_at: populated in Chunk 4 when real GPS flush is live
+    # last_gps_event_at: newest gps:last:* value from Redis; fallback to DB MAX
     last_gps_event_at = None
+    try:
+        from app.redis_client import get_redis as _get_redis
+
+        r = _get_redis()
+        # Scan all gps:last:* keys and find the newest timestamp
+        keys: list[str] = []
+        cursor = 0
+        while True:
+            cursor, batch = await r.scan(cursor, match="gps:last:*", count=200)
+            keys.extend(batch)
+            if cursor == 0:
+                break
+
+        if keys:
+            values = await r.mget(*keys)
+            best: float | None = None
+            for v in values:
+                if v is None:
+                    continue
+                try:
+                    ts = float(v)
+                    if best is None or ts > best:
+                        best = ts
+                except ValueError:
+                    try:
+                        from datetime import datetime as _dt
+
+                        ts2 = _dt.fromisoformat(v).timestamp()
+                        if best is None or ts2 > best:
+                            best = ts2
+                    except Exception:
+                        pass
+            if best is not None:
+                from datetime import UTC as _UTC
+                from datetime import datetime as _dt
+
+                last_gps_event_at = _dt.fromtimestamp(best, tz=_UTC).isoformat()
+    except Exception:
+        pass  # Redis degraded — last_gps_event_at stays None
+
+    # DB fallback if Redis had nothing
+    if last_gps_event_at is None and db_status == "connected":
+        try:
+
+
+            async with engine.connect() as conn:
+                result = await conn.execute(
+                    text("SELECT MAX(recorded_at) FROM gps_logs")
+                )
+                row = result.fetchone()
+                if row and row[0] is not None:
+                    last_gps_event_at = row[0].isoformat()
+        except Exception:
+            pass
 
     http_status = 200 if db_status == "connected" else 503
     return JSONResponse(
