@@ -18,6 +18,9 @@ from app.deps import DbDep, SchoolScopeDep, require_role
 from app.errors import AppError
 from app.tracking import services
 from app.tracking.schemas import (
+    AttendanceRecordOut,
+    AttendanceResult,
+    AttendanceSubmitIn,
     GenerateResult,
     GpsLogGeoJSON,
     TripCreateIn,
@@ -206,3 +209,80 @@ async def cancel_trip(
 ) -> TripOut:
     """Admin cancels a trip."""
     return await services.cancel_trip(db, trip_id, school_id)
+
+
+# ---------------------------------------------------------------------------
+# Driver: submit stop attendance
+# ---------------------------------------------------------------------------
+
+
+@router.post("/{trip_id}/stops/{stop_id}/attendance")
+async def submit_stop_attendance(
+    trip_id: UUID,
+    stop_id: UUID,
+    body: AttendanceSubmitIn,
+    db: DbDep,
+    claims: _DriverDep,
+    school_id: SchoolScopeDep,
+) -> AttendanceResult:
+    """
+    Driver submits boarding attendance for a stop.
+    Only the assigned driver can submit (ownership check).
+    Triggers not-boarded alerts for absent unexcused students.
+    """
+    from app.core.socketio import sio
+    from app.crud import get_scoped_or_404
+    from app.tracking.models import Trip
+    from app.tracking.safety import process_stop_attendance
+
+    driver_user_id = UUID(claims["sub"])
+    trip = await get_scoped_or_404(db, Trip, trip_id, school_id)
+
+    if trip.driver_id != driver_user_id:
+        raise AppError("forbidden", "You are not assigned to this trip", 403)
+
+    entries = [
+        {"student_id": e.student_id, "status": e.status}
+        for e in body.attendance
+    ]
+    result = await process_stop_attendance(db, sio, trip, stop_id, entries)
+    return AttendanceResult(**result)
+
+
+# ---------------------------------------------------------------------------
+# Attendance roster — full trip
+# ---------------------------------------------------------------------------
+
+
+@router.get("/{trip_id}/attendance")
+async def get_trip_attendance(
+    trip_id: UUID,
+    db: DbDep,
+    claims: _AnyAuthDep,
+    school_id: SchoolScopeDep,
+) -> list[AttendanceRecordOut]:
+    """
+    Return the full attendance roster for a trip — all assigned students
+    joined with their current attendance record (if any).
+    """
+    return await services.get_trip_attendance(db, trip_id, school_id)
+
+
+# ---------------------------------------------------------------------------
+# Attendance roster — per stop
+# ---------------------------------------------------------------------------
+
+
+@router.get("/{trip_id}/stops/{stop_id}/attendance")
+async def get_stop_attendance(
+    trip_id: UUID,
+    stop_id: UUID,
+    db: DbDep,
+    claims: _AnyAuthDep,
+    school_id: SchoolScopeDep,
+) -> list[AttendanceRecordOut]:
+    """
+    Return attendance records scoped to a specific stop of a trip.
+    Only students assigned to that stop are included.
+    """
+    return await services.get_stop_attendance(db, trip_id, stop_id, school_id)

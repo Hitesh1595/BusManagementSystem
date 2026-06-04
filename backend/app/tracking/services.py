@@ -32,8 +32,10 @@ from app.crud import get_scoped_or_404
 from app.errors import AppError
 from app.routes.models import Route, RouteStop
 from app.schools.models import School
-from app.tracking.models import GpsLog, Trip
+from app.students.models import Student, StudentRouteAssignment
+from app.tracking.models import AttendanceRecord, GpsLog, Trip
 from app.tracking.schemas import (
+    AttendanceRecordOut,
     DriverBrief,
     GpsLogGeoJSON,
     RouteBrief,
@@ -232,15 +234,15 @@ async def create_trip(
         .on_conflict_do_nothing(index_elements=["route_id", "scheduled_date", "slot"])
         .returning(Trip)
     )
-    result = (await db.execute(stmt)).fetchone()
+    result = (await db.execute(stmt)).scalar_one_or_none()
     if result is None:
         raise AppError("conflict", "Trip already exists for this route/date/slot", 409)
 
     await db.commit()
 
-    # Reload to get the full ORM object
-    trip = (await db.execute(select(Trip).where(Trip.id == result[0]))).scalar_one()
-    return TripOut.model_validate(trip)
+    # Reload to get the full ORM object (result is already the ORM Trip)
+    await db.refresh(result)
+    return TripOut.model_validate(result)
 
 
 # ---------------------------------------------------------------------------
@@ -505,6 +507,146 @@ async def cancel_trip(
     await db.commit()
     await db.refresh(trip)
     return TripOut.model_validate(trip)
+
+
+# ---------------------------------------------------------------------------
+# Attendance roster queries
+# ---------------------------------------------------------------------------
+
+
+async def get_trip_attendance(
+    db: AsyncSession,
+    trip_id: uuid.UUID,
+    school_id: uuid.UUID | None,
+) -> list[AttendanceRecordOut]:
+    """
+    Return all assigned students for the trip's route, joined with their
+    attendance record (None fields when no record exists yet).
+    """
+    trip = await get_scoped_or_404(db, Trip, trip_id, school_id)
+
+    # All active assignments for this route (across all stops)
+    assignment_rows = (
+        await db.execute(
+            select(StudentRouteAssignment).where(
+                and_(
+                    StudentRouteAssignment.route_id == trip.route_id,
+                    StudentRouteAssignment.is_active.is_(True),
+                )
+            )
+        )
+    ).scalars().all()
+
+    student_ids = [r.student_id for r in assignment_rows]
+    stop_id_by_student = {r.student_id: r.stop_id for r in assignment_rows}
+
+    if not student_ids:
+        return []
+
+    # Load students (single IN query)
+    students = {
+        s.id: s
+        for s in (
+            await db.execute(select(Student).where(Student.id.in_(student_ids)))
+        ).scalars().all()
+    }
+
+    # Load existing attendance records (single IN query)
+    att_rows = {
+        r.student_id: r
+        for r in (
+            await db.execute(
+                select(AttendanceRecord).where(
+                    and_(
+                        AttendanceRecord.trip_id == trip.id,
+                        AttendanceRecord.student_id.in_(student_ids),
+                    )
+                )
+            )
+        ).scalars().all()
+    }
+
+    result = []
+    for sid in student_ids:
+        student = students.get(sid)
+        att = att_rows.get(sid)
+        result.append(
+            AttendanceRecordOut(
+                student_id=sid,
+                student_name=student.full_name if student else str(sid),
+                stop_id=att.stop_id if att else stop_id_by_student.get(sid),
+                status=att.status if att else None,
+                marked_at=att.marked_at if att else None,
+            )
+        )
+    return result
+
+
+async def get_stop_attendance(
+    db: AsyncSession,
+    trip_id: uuid.UUID,
+    stop_id: uuid.UUID,
+    school_id: uuid.UUID | None,
+) -> list[AttendanceRecordOut]:
+    """
+    Return attendance records scoped to a specific stop.
+    Only students assigned to that stop are included.
+    """
+    trip = await get_scoped_or_404(db, Trip, trip_id, school_id)
+
+    assignment_rows = (
+        await db.execute(
+            select(StudentRouteAssignment).where(
+                and_(
+                    StudentRouteAssignment.route_id == trip.route_id,
+                    StudentRouteAssignment.stop_id == stop_id,
+                    StudentRouteAssignment.is_active.is_(True),
+                )
+            )
+        )
+    ).scalars().all()
+
+    student_ids = [r.student_id for r in assignment_rows]
+
+    if not student_ids:
+        return []
+
+    students = {
+        s.id: s
+        for s in (
+            await db.execute(select(Student).where(Student.id.in_(student_ids)))
+        ).scalars().all()
+    }
+
+    att_rows = {
+        r.student_id: r
+        for r in (
+            await db.execute(
+                select(AttendanceRecord).where(
+                    and_(
+                        AttendanceRecord.trip_id == trip.id,
+                        AttendanceRecord.student_id.in_(student_ids),
+                        AttendanceRecord.stop_id == stop_id,
+                    )
+                )
+            )
+        ).scalars().all()
+    }
+
+    result = []
+    for sid in student_ids:
+        student = students.get(sid)
+        att = att_rows.get(sid)
+        result.append(
+            AttendanceRecordOut(
+                student_id=sid,
+                student_name=student.full_name if student else str(sid),
+                stop_id=stop_id,
+                status=att.status if att else None,
+                marked_at=att.marked_at if att else None,
+            )
+        )
+    return result
 
 
 async def end_trip(

@@ -131,3 +131,42 @@ class GpsLogGeoJSON(BaseModel):
 
 class GenerateResult(BaseModel):
     created: int
+
+
+# ---------------------------------------------------------------------------
+# Attendance — request + response schemas (spec §8.8)
+# ---------------------------------------------------------------------------
+
+AttendanceStatusEnum = Literal["boarded", "absent", "absent_parent_marked"]
+
+
+class AttendanceEntry(BaseModel):
+    """One student's attendance status submitted by the driver."""
+
+    student_id: uuid.UUID
+    status: AttendanceStatusEnum
+
+
+class AttendanceSubmitIn(BaseModel):
+    """Body for POST /trips/{trip_id}/stops/{stop_id}/attendance."""
+
+    attendance: list[AttendanceEntry]
+
+
+class AttendanceResult(BaseModel):
+    """Response from attendance submission."""
+
+    processed: int
+    alerts_triggered: int
+
+
+class AttendanceRecordOut(BaseModel):
+    """Single attendance record in the roster view."""
+
+    student_id: uuid.UUID
+    student_name: str
+    stop_id: uuid.UUID | None
+    status: str | None  # None if student has no record yet (unscanned)
+    marked_at: datetime | None
+
+    model_config = {"from_attributes": True}
