@@ -230,6 +230,12 @@ async def request_password_reset(db: AsyncSession, email: str) -> None:
         f"<p>If you did not request this, you can safely ignore this email.</p>"
     )
     await send_email(to=user.email, subject="Reset your YatraTrack password", html=html)
+    if not settings.RESEND_API_KEY:
+        # Dev/sandbox: no email is actually sent, so surface the reset link in the
+        # logs to make the flow testable locally. RESEND_API_KEY is always set in
+        # staging/prod, so this branch never runs there. (Field name is `reset_url`,
+        # not `url`, so the log scrubber leaves the token intact for dev use.)
+        log.info("auth.password_reset_dev_link", reset_url=reset_url)
     log.info("auth.password_reset_email_sent", user_id=str(user.id))
 
 
