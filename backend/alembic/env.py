@@ -28,16 +28,16 @@ config.set_main_option("sqlalchemy.url", _settings.DATABASE_URL)
 # Import Base.metadata so alembic autogenerate can detect schema changes.
 # Additional model modules are imported here as they land (per chunk).
 # ---------------------------------------------------------------------------
+from app.alerts import models as _alert_models  # noqa: E402, F401
 from app.audit import models as _audit_models  # noqa: E402, F401
 from app.auth import models as _auth_models  # noqa: E402, F401
 from app.database import Base  # noqa: E402, F401
+from app.notifications import models as _notif_models  # noqa: E402, F401
 from app.routes import models as _route_models  # noqa: E402, F401
 from app.schools import models as _school_models  # noqa: E402, F401
 from app.students import models as _student_models  # noqa: E402, F401
 from app.tracking import models as _tracking_models  # noqa: E402, F401
 from app.vehicles import models as _vehicle_models  # noqa: E402, F401
-
-# from app.notifications import models as _notif_models  # noqa: F401
 
 target_metadata = Base.metadata
 
