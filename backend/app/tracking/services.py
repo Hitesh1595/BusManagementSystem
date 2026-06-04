@@ -396,6 +396,7 @@ async def start_trip(
     """
     Driver starts a trip: scheduled → in_progress.
     Enforces ownership: trip.driver_id must equal driver_user_id.
+    After commit, populates Redis caches (best-effort; trip still starts on failure).
     """
     trip = await get_scoped_or_404(db, Trip, trip_id, school_id)
 
@@ -415,7 +416,73 @@ async def start_trip(
     trip.updated_at = datetime.now(UTC)
     await db.commit()
     await db.refresh(trip)
+
+    # ------------------------------------------------------------------
+    # Populate Redis caches (best-effort — failure must not block the trip)
+    # ------------------------------------------------------------------
+    await _populate_trip_redis_cache(db, trip)
+
     return TripOut.model_validate(trip)
+
+
+async def _populate_trip_redis_cache(db: AsyncSession, trip: Trip) -> None:
+    """
+    Write two Redis keys so the Socket.IO GPS hot path avoids DB hits:
+
+      trip:stops:{trip_id}   — JSON list of {stop_id, lat, lng, order}
+      trip:driver:{trip_id}  — str(driver_id)
+
+    Uses ST_X / ST_Y to extract coordinates from the geography column.
+    Skips silently if Redis is unavailable.
+    """
+    import json
+
+    from geoalchemy2.functions import ST_X, ST_Y
+
+    from app.redis_client import get_redis
+
+    try:
+        r = get_redis()
+
+        # Build stop list ordered by stop_order
+        stmt = (
+            select(
+                RouteStop.id,
+                RouteStop.stop_order,
+                ST_X(RouteStop.location).label("lng"),
+                ST_Y(RouteStop.location).label("lat"),
+            )
+            .where(RouteStop.route_id == trip.route_id)
+            .order_by(RouteStop.stop_order.asc())
+        )
+        rows = (await db.execute(stmt)).all()
+
+        stops = [
+            {
+                "stop_id": str(row.id),
+                "order": row.stop_order,
+                "lat": float(row.lat),
+                "lng": float(row.lng),
+            }
+            for row in rows
+        ]
+
+        trip_id_str = str(trip.id)
+
+        await r.set(f"trip:stops:{trip_id_str}", json.dumps(stops))
+        await r.set(f"trip:driver:{trip_id_str}", str(trip.driver_id))
+
+        log.info(
+            "start_trip.redis_cache_populated",
+            trip_id=trip_id_str,
+            stops=len(stops),
+        )
+    except Exception as exc:
+        log.warning(
+            "start_trip.redis_cache_failed",
+            trip_id=str(trip.id),
+            exc=str(exc),
+        )
 
 
 async def cancel_trip(
