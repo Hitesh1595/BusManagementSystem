@@ -25,6 +25,8 @@ from app.routes.schemas import (
     StopOut,
     StopUpdate,
 )
+from app.students import services as student_services
+from app.students.schemas import AssignmentOut, AssignmentPage, AssignStudentIn
 
 # Shared role gate applied at router level
 router = APIRouter(
@@ -162,13 +164,27 @@ async def list_route_students(
     school_id: SchoolScopeDep,
     limit: Annotated[int, Query(le=100, ge=1)] = 50,
     offset: Annotated[int, Query(ge=0)] = 0,
-) -> dict:
-    """
-    TODO(part-d): returns assigned students for this route.
-    Currently returns an empty paginated list — student_route_assignments is Part D.
-    """
-    return await services.list_route_students(db, route_id, school_id, limit=limit, offset=offset)
+) -> AssignmentPage:
+    """Return real student_route_assignments for this route (Part D)."""
+    return await student_services.list_route_students_real(
+        db, route_id, school_id, limit=limit, offset=offset
+    )
 
 
-# POST /{route_id}/students — TODO(part-d): assign student to route+stop (capacity-checked).
-# Deferred to Part D when student_route_assignments table is created.
+@router.post("/{route_id}/students", status_code=status.HTTP_201_CREATED)
+async def assign_student_to_route(
+    route_id: UUID,
+    body: AssignStudentIn,
+    db: DbDep,
+    claims: ClaimsDep,
+    school_id: SchoolScopeDep,
+) -> AssignmentOut:
+    """
+    Assign a student to a route+stop with capacity check (Part D).
+    Raises 409 if route is at capacity or student already assigned.
+    """
+    if school_id is None:
+        raise AppError("forbidden", "Cannot determine school scope", 403)
+    return await student_services.assign_student_to_route(
+        db, route_id, school_id, body.student_id, body.stop_id
+    )
