@@ -100,5 +100,8 @@ app.include_router(trips_router)
 # Mount Socket.IO last so REST routes win path matching.
 app.mount("/socket.io", sio_app)
 
+# Import socket handlers so @sio.on(...) registrations run at startup.
+import app.tracking.socket_handlers  # noqa: E402, F401
+
 # Routers added per chunk:
 # app.include_router(notifications.router)
