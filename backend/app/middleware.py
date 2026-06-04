@@ -49,13 +49,16 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
         duration_ms = round((time.monotonic() - start) * 1000, 2)
         response.headers["X-Request-ID"] = request_id
 
-        log.info(
-            "http.request",
-            method=request.method,
-            path=request.url.path,
-            status_code=response.status_code,
-            duration_ms=duration_ms,
-        )
+        # Skip the per-request log for the healthcheck endpoint — the container
+        # polls it every ~10s and it carries no diagnostic value.
+        if request.url.path != "/health":
+            log.info(
+                "http.request",
+                method=request.method,
+                path=request.url.path,
+                status_code=response.status_code,
+                duration_ms=duration_ms,
+            )
 
         return response
 

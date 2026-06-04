@@ -87,7 +87,13 @@ async def flush_gps_buffer() -> None:
         try:
             trip_id = uuid.UUID(trip_id_str)
         except ValueError:
-            log.warning("flush_gps_buffer.invalid_trip_id", key=key)
+            # Malformed key (e.g. written with a Trip object instead of its id).
+            # Self-heal by deleting it so it doesn't recur every flush cycle.
+            log.warning("flush_gps_buffer.invalid_trip_id_deleted", key=key)
+            try:
+                await r.delete(key)
+            except Exception:
+                pass
             continue
 
         try:

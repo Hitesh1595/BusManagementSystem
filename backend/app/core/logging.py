@@ -23,6 +23,17 @@ def scrub_sensitive(logger, method_name, event_dict):
     return event_dict
 
 
+class _HealthCheckFilter(logging.Filter):
+    """Drop uvicorn access-log records for the /health endpoint.
+
+    The container HEALTHCHECK polls /health every ~10s; logging each hit
+    floods the logs with no diagnostic value.
+    """
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        return "/health" not in record.getMessage()
+
+
 def configure_logging(level: str = "DEBUG") -> None:
     logging.basicConfig(format="%(message)s", level=getattr(logging, level.upper(), logging.INFO))
     structlog.configure(
@@ -38,3 +49,10 @@ def configure_logging(level: str = "DEBUG") -> None:
         ),
         cache_logger_on_first_use=True,
     )
+
+    # APScheduler emits an INFO line per tick ("Looking for jobs", "Next wakeup",
+    # "Running job ... executed successfully") — far too chatty. Surface only warnings.
+    logging.getLogger("apscheduler").setLevel(logging.WARNING)
+
+    # Suppress uvicorn access-log spam from the every-10s container healthcheck.
+    logging.getLogger("uvicorn.access").addFilter(_HealthCheckFilter())
