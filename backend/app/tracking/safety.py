@@ -1,5 +1,5 @@
 """
-Attendance safety logic — spec §10.1.
+Attendance safety logic — spec §10.1 / §10.2.
 
 process_stop_attendance(db, sio, trip, stop_id, entries):
   1. UPSERT each submitted entry into attendance_records on conflict
@@ -10,15 +10,35 @@ process_stop_attendance(db, sio, trip, stop_id, entries):
      and school admins.
   3. For each boarded entry emit attendance_update to the child's parent.
   4. Commit once. Return {"processed": len(entries), "alerts_triggered": N}.
+
+end_trip(db, sio, trip):
+  Safeguarding gate — checks boarded-not-dropped students.
+  If all clear → _complete_trip; else → pending_safeguard_check + alerts.
+
+_complete_trip(db, sio, trip_id):
+  Atomic idempotent completion guard using rowcount. Returns object
+  with .completed bool. Emits trip_ended only when rowcount > 0.
+
+drop_students(db, sio, trip_id, student_ids, drop_type, drop_stop_id):
+  Mark students dropped, auto-resolve child_not_dropped alerts, then
+  _complete_if_clear.
+
+_complete_if_clear(db, sio, trip_id):
+  If no unresolved alerts AND no boarded-not-dropped rows remain →
+  call _complete_trip.
+
+resolve_alert_and_maybe_complete(db, alert_id):
+  Mark alert resolved, then _complete_if_clear for its trip.
 """
 
 from __future__ import annotations
 
 import uuid
+from datetime import UTC, datetime
 from typing import Any
 
 import structlog
-from sqlalchemy import and_, select
+from sqlalchemy import and_, select, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -30,6 +50,293 @@ from app.students.models import Student, StudentRouteAssignment
 from app.tracking.models import AttendanceRecord, Trip
 
 log = structlog.get_logger(__name__)
+
+
+# ---------------------------------------------------------------------------
+# Internal dataclass-like return for _complete_trip
+# ---------------------------------------------------------------------------
+
+
+class _CompletionResult:
+    """Simple result holder so callers can check .completed."""
+
+    def __init__(self, completed: bool) -> None:
+        self.completed = completed
+
+
+# ---------------------------------------------------------------------------
+# Atomic idempotent trip completion guard
+# ---------------------------------------------------------------------------
+
+
+async def _complete_trip(
+    db: AsyncSession,
+    sio: Any,
+    trip_id: uuid.UUID,
+) -> _CompletionResult:
+    """
+    Atomically transition trip to completed using a conditional UPDATE.
+
+    UPDATE trips SET status='completed', safeguarding_checked=true
+    WHERE id=:trip_id AND status IN ('in_progress', 'pending_safeguard_check')
+
+    rowcount > 0 → this caller won the race; emit trip_ended once.
+    rowcount == 0 → trip already completed (concurrent caller); no-op.
+
+    The UPDATE is committed before the socket emit so the DB is authoritative.
+    """
+    stmt = (
+        update(Trip)
+        .where(
+            and_(
+                Trip.id == trip_id,
+                Trip.status.in_(("in_progress", "pending_safeguard_check")),
+            )
+        )
+        .values(
+            status="completed",
+            safeguarding_checked=True,
+            ended_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
+        )
+    )
+    result = await db.execute(stmt)
+    await db.commit()
+
+    if result.rowcount > 0:
+        log.info("trip.completed", trip_id=str(trip_id))
+        try:
+            await sio.emit("trip_ended", {"trip_id": str(trip_id)}, room=f"trip:{trip_id}")
+        except Exception as exc:
+            log.warning("trip.emit_trip_ended_failed", trip_id=str(trip_id), exc=str(exc))
+        return _CompletionResult(completed=True)
+
+    log.info("trip.complete_noop_already_done", trip_id=str(trip_id))
+    return _CompletionResult(completed=False)
+
+
+# ---------------------------------------------------------------------------
+# End-of-trip safeguarding gate (driver calls PUT /trips/{id}/end)
+# ---------------------------------------------------------------------------
+
+
+async def end_trip(
+    db: AsyncSession,
+    sio: Any,
+    trip: Trip,
+) -> dict:
+    """
+    Safeguarding gate — spec §10.2.
+
+    Queries boarded-not-dropped students for this trip.
+    If none → atomically complete.
+    If any → create child_not_dropped alerts, set pending_safeguard_check,
+    return {status, unresolved_students}.
+    """
+    # --- find unaccounted students ---
+    stmt = select(AttendanceRecord).where(
+        and_(
+            AttendanceRecord.trip_id == trip.id,
+            AttendanceRecord.status == "boarded",
+            AttendanceRecord.dropped_at.is_(None),
+        )
+    )
+    unaccounted: list[AttendanceRecord] = (await db.execute(stmt)).scalars().all()
+
+    if not unaccounted:
+        # All clear — atomic completion
+        await _complete_trip(db, sio, trip.id)
+        return {"status": "completed", "unresolved_students": []}
+
+    # --- one or more unaccounted students ---
+    # Batch-load student names
+    student_ids = [r.student_id for r in unaccounted]
+    student_map: dict[uuid.UUID, Student] = {
+        s.id: s
+        for s in (
+            await db.execute(select(Student).where(Student.id.in_(student_ids)))
+        ).scalars().all()
+    }
+
+    for record in unaccounted:
+        sid = record.student_id
+        student = student_map.get(sid)
+        student_name = student.full_name if student else str(sid)
+
+        alert = Alert(
+            type="child_not_dropped",
+            severity="critical",
+            school_id=trip.school_id,
+            trip_id=trip.id,
+            title=f"Child not dropped: {student_name}",
+            metadata_={
+                "student_id": str(sid),
+                "trip_id": str(trip.id),
+            },
+        )
+        db.add(alert)
+
+        try:
+            await sio.emit(
+                "child_not_dropped",
+                {"trip_id": str(trip.id), "student_id": str(sid), "student_name": student_name},
+                room=f"school:{trip.school_id}",
+            )
+        except Exception as exc:
+            log.warning("end_trip.emit_failed", student_id=str(sid), exc=str(exc))
+
+    # Transition trip to pending_safeguard_check
+    await db.execute(
+        update(Trip)
+        .where(and_(Trip.id == trip.id, Trip.status == "in_progress"))
+        .values(status="pending_safeguard_check", updated_at=datetime.now(UTC))
+    )
+    await db.commit()
+
+    unresolved_ids = [str(r.student_id) for r in unaccounted]
+    log.info(
+        "trip.pending_safeguard_check",
+        trip_id=str(trip.id),
+        unresolved=len(unresolved_ids),
+    )
+    return {
+        "status": "pending_safeguard_check",
+        "unresolved_students": unresolved_ids,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Drop students (driver POST /trips/{id}/drop)
+# ---------------------------------------------------------------------------
+
+
+async def drop_students(
+    db: AsyncSession,
+    sio: Any,
+    trip_id: uuid.UUID,
+    student_ids: list[uuid.UUID],
+    drop_type: str,
+    drop_stop_id: uuid.UUID | None = None,
+) -> dict:
+    """
+    Mark students as dropped, auto-resolve their child_not_dropped alerts,
+    then check if trip can now be completed.
+
+    Returns {"dropped": n, "completion": _CompletionResult}.
+    """
+    now = datetime.now(UTC)
+
+    # UPDATE attendance rows for the given students + trip
+    stmt = (
+        update(AttendanceRecord)
+        .where(
+            and_(
+                AttendanceRecord.trip_id == trip_id,
+                AttendanceRecord.student_id.in_(student_ids),
+                AttendanceRecord.status == "boarded",
+            )
+        )
+        .values(
+            dropped_at=now,
+            drop_type=drop_type,
+            drop_stop_id=drop_stop_id,
+        )
+    )
+    result = await db.execute(stmt)
+    dropped = result.rowcount
+
+    # Auto-resolve any unresolved child_not_dropped alerts for these students
+    for sid in student_ids:
+        await db.execute(
+            update(Alert)
+            .where(
+                and_(
+                    Alert.trip_id == trip_id,
+                    Alert.type == "child_not_dropped",
+                    Alert.resolved_at.is_(None),
+                    Alert.metadata_["student_id"].astext == str(sid),
+                )
+            )
+            .values(resolved_at=now)
+        )
+
+    await db.commit()
+
+    completion = await _complete_if_clear(db, sio, trip_id)
+    return {"dropped": dropped, "completion": completion}
+
+
+# ---------------------------------------------------------------------------
+# Check if trip can now be completed (both resolution paths converge here)
+# ---------------------------------------------------------------------------
+
+
+async def _complete_if_clear(
+    db: AsyncSession,
+    sio: Any,
+    trip_id: uuid.UUID,
+) -> _CompletionResult:
+    """
+    If no boarded-not-dropped rows remain for the trip, attempt atomic completion.
+    Returns _CompletionResult with .completed set accordingly.
+    """
+    # Count remaining boarded-not-dropped students
+    remaining_stmt = select(AttendanceRecord).where(
+        and_(
+            AttendanceRecord.trip_id == trip_id,
+            AttendanceRecord.status == "boarded",
+            AttendanceRecord.dropped_at.is_(None),
+        )
+    )
+    remaining = (await db.execute(remaining_stmt)).scalars().all()
+
+    if remaining:
+        log.info(
+            "trip.still_unaccounted",
+            trip_id=str(trip_id),
+            count=len(remaining),
+        )
+        return _CompletionResult(completed=False)
+
+    return await _complete_trip(db, sio, trip_id)
+
+
+# ---------------------------------------------------------------------------
+# Admin resolves a child_not_dropped alert (PUT /alerts/{id}/resolve)
+# ---------------------------------------------------------------------------
+
+
+async def resolve_alert_and_maybe_complete(
+    db: AsyncSession,
+    sio: Any,
+    alert_id: uuid.UUID,
+) -> _CompletionResult:
+    """
+    Mark the alert resolved and attempt trip completion if all clear.
+    Used by the alerts router PUT /{id}/resolve endpoint.
+    """
+    now = datetime.now(UTC)
+
+    # Load alert
+    alert = (
+        await db.execute(select(Alert).where(Alert.id == alert_id))
+    ).scalar_one_or_none()
+    if alert is None:
+        return _CompletionResult(completed=False)
+
+    # Mark resolved
+    alert.resolved_at = now
+    await db.commit()
+
+    if alert.trip_id is None:
+        return _CompletionResult(completed=False)
+
+    return await _complete_if_clear(db, sio, alert.trip_id)
+
+
+# ---------------------------------------------------------------------------
+# process_stop_attendance (unchanged from Chunk 5A — kept here for locality)
+# ---------------------------------------------------------------------------
 
 
 async def process_stop_attendance(

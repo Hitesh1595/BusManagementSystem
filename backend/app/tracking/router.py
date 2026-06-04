@@ -18,9 +18,14 @@ from app.deps import DbDep, SchoolScopeDep, require_role
 from app.errors import AppError
 from app.tracking import services
 from app.tracking.schemas import (
+    AbsenceListOut,
+    AbsentMarkResult,
     AttendanceRecordOut,
     AttendanceResult,
     AttendanceSubmitIn,
+    DropIn,
+    DropResult,
+    EndTripResult,
     GenerateResult,
     GpsLogGeoJSON,
     TripCreateIn,
@@ -38,6 +43,7 @@ _DriverDep = Annotated[dict, Depends(require_role("driver"))]
 _AnyAuthDep = Annotated[
     dict, Depends(require_role("school_admin", "super_admin", "driver", "parent"))
 ]
+_ParentDep = Annotated[dict, Depends(require_role("parent"))]
 
 
 # ---------------------------------------------------------------------------
@@ -130,7 +136,7 @@ async def list_trips(
 
 
 # ---------------------------------------------------------------------------
-# Get trip detail (any authenticated role)
+# Get trip detail (any authenticated role) — with conditional driver phone
 # ---------------------------------------------------------------------------
 
 
@@ -141,8 +147,23 @@ async def get_trip(
     claims: _AnyAuthDep,
     school_id: SchoolScopeDep,
 ) -> TripDetail:
-    """Return trip detail including route, vehicle.plate_number, driver (phone=null)."""
-    return await services.get_trip_detail(db, trip_id, school_id)
+    """
+    Return trip detail including route, vehicle, driver.
+
+    driver.phone is returned ONLY IF:
+      - requester role is 'parent'
+      - trip.status == 'in_progress'
+      - school.settings.driver_phone_visible == true
+      - the requester is the parent of at least one student assigned to the trip
+
+    On disclosure an audit_logs row is written.
+    """
+    return await services.get_trip_detail(
+        db,
+        trip_id,
+        school_id,
+        requester_claims=claims,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -179,7 +200,7 @@ async def start_trip(
 
 
 # ---------------------------------------------------------------------------
-# Driver: end trip
+# Driver: end trip — safeguarding gate (Chunk 5B)
 # ---------------------------------------------------------------------------
 
 
@@ -189,10 +210,73 @@ async def end_trip(
     db: DbDep,
     claims: _DriverDep,
     school_id: SchoolScopeDep,
-) -> TripOut:
-    """Driver ends a trip (stub — safeguarding gate is Chunk 5)."""
+) -> EndTripResult:
+    """
+    Driver ends a trip — runs the safeguarding gate (spec §10.2).
+
+    Returns {status, unresolved_students}.
+    If all students accounted for → status='completed'.
+    If any boarded-not-dropped → status='pending_safeguard_check' + alert IDs.
+    """
+    from app.core.socketio import sio
+
     driver_user_id = UUID(claims["sub"])
-    return await services.end_trip(db, trip_id, school_id, driver_user_id)
+    result = await services.end_trip(db, trip_id, school_id, driver_user_id, sio=sio)
+    return EndTripResult(**result)
+
+
+# ---------------------------------------------------------------------------
+# Driver: drop students (POST /trips/{id}/drop)
+# ---------------------------------------------------------------------------
+
+
+@router.post("/{trip_id}/drop")
+async def drop_students(
+    trip_id: UUID,
+    body: DropIn,
+    db: DbDep,
+    claims: _DriverDep,
+    school_id: SchoolScopeDep,
+) -> DropResult:
+    """
+    Driver marks students as dropped off — spec §8.8 / §10.2.
+
+    Body: {student_ids:[...], drop_type:"school"} (morning, one tap)
+       or {student_ids:[...], drop_type:"stop", stop_id:<uuid>}
+
+    Auto-resolves matching child_not_dropped alerts and completes the
+    trip if all students are now accounted for.
+    """
+    from app.core.socketio import sio
+    from app.crud import get_scoped_or_404
+    from app.tracking.models import Trip
+    from app.tracking.safety import drop_students as _drop
+
+    driver_user_id = UUID(claims["sub"])
+    trip = await get_scoped_or_404(db, Trip, trip_id, school_id)
+
+    if trip.driver_id != driver_user_id:
+        raise AppError("forbidden", "You are not assigned to this trip", 403)
+
+    if trip.status not in ("in_progress", "pending_safeguard_check"):
+        raise AppError(
+            "conflict",
+            f"Cannot drop students for a trip with status '{trip.status}'",
+            409,
+        )
+
+    if body.drop_type == "stop" and body.stop_id is None:
+        raise AppError("validation_error", "stop_id is required when drop_type='stop'", 422)
+
+    result = await _drop(
+        db,
+        sio,
+        trip_id,
+        body.student_ids,
+        body.drop_type,
+        drop_stop_id=body.stop_id,
+    )
+    return DropResult(dropped=result["dropped"])
 
 
 # ---------------------------------------------------------------------------
@@ -286,3 +370,67 @@ async def get_stop_attendance(
     Only students assigned to that stop are included.
     """
     return await services.get_stop_attendance(db, trip_id, stop_id, school_id)
+
+
+# ---------------------------------------------------------------------------
+# Parent: pre-mark absent (spec §8.9 / §10.3)
+# ---------------------------------------------------------------------------
+
+
+@router.post("/{trip_id}/absent/{student_id}", status_code=200)
+async def mark_absent(
+    trip_id: UUID,
+    student_id: UUID,
+    db: DbDep,
+    claims: _ParentDep,
+    school_id: SchoolScopeDep,
+) -> AbsentMarkResult:
+    """
+    Parent pre-marks their child absent for an upcoming trip.
+
+    Allowed ONLY if trip.status == 'scheduled' (before driver starts).
+    403 if the student is not the parent's child.
+    409 if trip already in_progress or later.
+    """
+    from app.core.socketio import sio
+
+    parent_id = UUID(claims["sub"])
+    return await services.mark_student_absent(
+        db, sio, trip_id, student_id, parent_id, school_id
+    )
+
+
+@router.delete("/{trip_id}/absent/{student_id}", status_code=200)
+async def cancel_absent(
+    trip_id: UUID,
+    student_id: UUID,
+    db: DbDep,
+    claims: _ParentDep,
+    school_id: SchoolScopeDep,
+) -> AbsentMarkResult:
+    """
+    Parent cancels a pre-marked absence.
+
+    Allowed only if trip is still 'scheduled'.
+    """
+    parent_id = UUID(claims["sub"])
+    return await services.cancel_student_absent(
+        db, trip_id, student_id, parent_id, school_id
+    )
+
+
+# ---------------------------------------------------------------------------
+# Driver: list pre-marked absences for a trip (spec §8.9)
+# ---------------------------------------------------------------------------
+
+
+@router.get("/{trip_id}/absences")
+async def list_absences(
+    trip_id: UUID,
+    db: DbDep,
+    claims: _DriverDep,
+    school_id: SchoolScopeDep,
+) -> list[AbsenceListOut]:
+    """Driver retrieves list of parent-pre-marked absences for this trip."""
+    driver_user_id = UUID(claims["sub"])
+    return await services.list_trip_absences(db, trip_id, school_id, driver_user_id)

@@ -170,3 +170,51 @@ class AttendanceRecordOut(BaseModel):
     marked_at: datetime | None
 
     model_config = {"from_attributes": True}
+
+
+# ---------------------------------------------------------------------------
+# End-trip result (safeguarding gate) — spec §10.2
+# ---------------------------------------------------------------------------
+
+
+class EndTripResult(BaseModel):
+    status: str  # 'completed' | 'pending_safeguard_check'
+    unresolved_students: list[str]  # list of student UUIDs as strings
+
+
+# ---------------------------------------------------------------------------
+# Drop-off schemas — spec §8.8
+# ---------------------------------------------------------------------------
+
+DropTypeEnum = Literal["stop", "school"]
+
+
+class DropIn(BaseModel):
+    """Body for POST /trips/{id}/drop."""
+
+    student_ids: list[uuid.UUID]
+    drop_type: DropTypeEnum
+    stop_id: uuid.UUID | None = None  # required when drop_type='stop'
+
+
+class DropResult(BaseModel):
+    dropped: int
+
+
+# ---------------------------------------------------------------------------
+# Parent absent-marking schemas — spec §8.9
+# ---------------------------------------------------------------------------
+
+
+class AbsentMarkResult(BaseModel):
+    student_id: uuid.UUID
+    status: str  # 'absent_parent_marked' | 'cancelled'
+
+
+class AbsenceListOut(BaseModel):
+    student_id: uuid.UUID
+    student_name: str
+    stop_id: uuid.UUID | None
+    marked_at: datetime | None
+
+    model_config = {"from_attributes": True}

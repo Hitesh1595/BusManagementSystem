@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
+from app.alerts.router import router as alerts_router
 from app.auth import router as auth_router
 from app.config import get_settings
 from app.core.logging import configure_logging
@@ -150,6 +151,7 @@ app.include_router(routes_router)
 app.include_router(students_router)
 app.include_router(transport_router)
 app.include_router(trips_router)
+app.include_router(alerts_router)
 
 # Mount Socket.IO last so REST routes win path matching.
 app.mount("/socket.io", sio_app)
@@ -160,5 +162,4 @@ app.mount("/socket.io", sio_app)
 # FastAPI instance above.
 from app.tracking import socket_handlers as _socket_handlers  # noqa: E402, F401
 
-# Routers added per chunk:
-# app.include_router(notifications.router)
+# Chunk 5B: alerts router registered above.

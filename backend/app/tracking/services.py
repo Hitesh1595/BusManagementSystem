@@ -292,7 +292,23 @@ async def get_trip_detail(
     db: AsyncSession,
     trip_id: uuid.UUID,
     school_id: uuid.UUID | None,
+    requester_claims: dict | None = None,
 ) -> TripDetail:
+    """
+    Return trip detail with conditional driver phone disclosure — spec §10.5.
+
+    driver.phone is returned ONLY IF:
+      - requester role == 'parent'
+      - trip.status == 'in_progress'
+      - school.settings.driver_phone_visible == True
+      - requester is the parent of at least one student assigned to this trip
+
+    On disclosure: write audit_logs(action='driver_phone_viewed').
+    """
+    from app.audit.models import write_audit
+    from app.schools.models import School
+    from app.students.models import Student, StudentRouteAssignment
+
     trip = await get_scoped_or_404(db, Trip, trip_id, school_id)
 
     # Load related objects
@@ -304,17 +320,79 @@ async def get_trip_detail(
         await db.execute(select(User).where(User.id == trip.driver_id))
     ).scalar_one_or_none()
 
+    # -----------------------------------------------------------------
+    # Driver phone conditional disclosure — spec §10.5
+    # -----------------------------------------------------------------
+    phone_to_return: str | None = None
+
+    if (
+        driver is not None
+        and requester_claims is not None
+        and requester_claims.get("role") == "parent"
+        and trip.status == "in_progress"
+    ):
+        # Check school setting
+        school_row = (
+            await db.execute(select(School).where(School.id == trip.school_id))
+        ).scalar_one_or_none()
+        driver_phone_visible = (
+            school_row is not None
+            and isinstance(school_row.settings, dict)
+            and school_row.settings.get("driver_phone_visible") is True
+        )
+
+        if driver_phone_visible and driver.phone:
+            # Verify requester is parent of a student on this route
+            parent_id = uuid.UUID(requester_claims["sub"])
+            assigned_rows = (
+                await db.execute(
+                    select(StudentRouteAssignment).where(
+                        and_(
+                            StudentRouteAssignment.route_id == trip.route_id,
+                            StudentRouteAssignment.is_active.is_(True),
+                        )
+                    )
+                )
+            ).scalars().all()
+            assigned_student_ids = [r.student_id for r in assigned_rows]
+
+            is_parent = False
+            if assigned_student_ids:
+                students = (
+                    await db.execute(
+                        select(Student).where(
+                            and_(
+                                Student.id.in_(assigned_student_ids),
+                                Student.parent_id == parent_id,
+                            )
+                        )
+                    )
+                ).scalars().all()
+                is_parent = len(students) > 0
+
+            if is_parent:
+                phone_to_return = driver.phone
+                # Audit log — flush immediately; commit handled by caller/session
+                await write_audit(
+                    db,
+                    school_id=trip.school_id,
+                    user_id=parent_id,
+                    action="driver_phone_viewed",
+                    entity_type="user",
+                    entity_id=driver.id,
+                )
+                await db.commit()
+
     detail = TripDetail.model_validate(trip)
     if route:
         detail.route = RouteBrief.model_validate(route)
     if vehicle:
         detail.vehicle = VehicleBrief.model_validate(vehicle)
     if driver:
-        # phone: null for now — conditional disclosure is Chunk 5
         detail.driver = DriverBrief(
             id=driver.id,
             full_name=driver.full_name,
-            phone=None,
+            phone=phone_to_return,
         )
     return detail
 
@@ -654,13 +732,21 @@ async def end_trip(
     trip_id: uuid.UUID,
     school_id: uuid.UUID | None,
     driver_user_id: uuid.UUID,
-) -> TripOut:
+    sio: Any | None = None,
+) -> dict:
     """
-    Driver ends a trip.
-    STUB: sets status=completed directly.
-    TODO(chunk-5): safeguarding gate — check all students accounted for,
-    transition to pending_safeguard_check if needed.
+    Driver ends a trip — spec §10.2 safeguarding gate.
+
+    Delegates to safety.end_trip which runs the not-dropped check.
+    Returns a dict with {status, unresolved_students} (not TripOut,
+    since the safeguarding gate may leave the trip in pending_safeguard_check).
     """
+    from app.tracking.safety import end_trip as _safety_end_trip
+
+    if sio is None:
+        from app.core.socketio import sio as _sio
+        sio = _sio
+
     trip = await get_scoped_or_404(db, Trip, trip_id, school_id)
 
     # Ownership check
@@ -674,10 +760,196 @@ async def end_trip(
             409,
         )
 
-    # TODO(chunk-5): safeguarding gate
-    trip.status = "completed"
-    trip.ended_at = datetime.now(UTC)
-    trip.updated_at = datetime.now(UTC)
+    return await _safety_end_trip(db, sio, trip)
+
+
+# ---------------------------------------------------------------------------
+# Parent absent-marking — spec §8.9 / §10.3
+# ---------------------------------------------------------------------------
+
+
+async def mark_student_absent(
+    db: AsyncSession,
+    sio: Any,
+    trip_id: uuid.UUID,
+    student_id: uuid.UUID,
+    parent_id: uuid.UUID,
+    school_id: uuid.UUID | None,
+) -> dict:
+    """
+    Parent pre-marks their child absent before the trip starts.
+
+    Constraints:
+    - trip.status must be 'scheduled' (before driver starts)
+    - student.parent_id must equal the requesting parent
+    - Creates/upserts attendance(status=absent_parent_marked, marked_by=parent)
+    - Emits child_absent_marked to driver's user room
+    """
+    from sqlalchemy.dialects.postgresql import insert as pg_insert
+
+
+    trip = await get_scoped_or_404(db, Trip, trip_id, school_id)
+
+    if trip.status != "scheduled":
+        raise AppError(
+            "conflict",
+            f"Cannot mark absent: trip is already {trip.status}",
+            409,
+        )
+
+    # Verify the student belongs to this parent
+    student = (
+        await db.execute(
+            select(Student).where(
+                and_(Student.id == student_id, Student.parent_id == parent_id)
+            )
+        )
+    ).scalar_one_or_none()
+    if student is None:
+        raise AppError("forbidden", "Student not found or not your child", 403)
+
+    # Upsert attendance record
+    stmt = (
+        pg_insert(AttendanceRecord)
+        .values(
+            school_id=trip.school_id,
+            trip_id=trip_id,
+            student_id=student_id,
+            status="absent_parent_marked",
+            marked_by=parent_id,
+        )
+        .on_conflict_do_update(
+            index_elements=["trip_id", "student_id"],
+            set_={
+                "status": "absent_parent_marked",
+                "marked_by": parent_id,
+            },
+        )
+    )
+    await db.execute(stmt)
     await db.commit()
-    await db.refresh(trip)
-    return TripOut.model_validate(trip)
+
+    # Emit to driver
+    try:
+        await sio.emit(
+            "child_absent_marked",
+            {
+                "trip_id": str(trip_id),
+                "student_id": str(student_id),
+                "student_name": student.full_name,
+            },
+            room=f"user:{trip.driver_id}",
+        )
+    except Exception as exc:
+        log.warning(
+            "absent.emit_failed",
+            trip_id=str(trip_id),
+            student_id=str(student_id),
+            exc=str(exc),
+        )
+
+    return {"student_id": student_id, "status": "absent_parent_marked"}
+
+
+async def cancel_student_absent(
+    db: AsyncSession,
+    trip_id: uuid.UUID,
+    student_id: uuid.UUID,
+    parent_id: uuid.UUID,
+    school_id: uuid.UUID | None,
+) -> dict:
+    """
+    Parent cancels a pre-marked absence.
+    Only allowed if trip is still 'scheduled'.
+    """
+    from sqlalchemy import delete
+
+
+    trip = await get_scoped_or_404(db, Trip, trip_id, school_id)
+
+    if trip.status != "scheduled":
+        raise AppError(
+            "conflict",
+            f"Cannot cancel absence: trip is already {trip.status}",
+            409,
+        )
+
+    # Verify ownership
+    student = (
+        await db.execute(
+            select(Student).where(
+                and_(Student.id == student_id, Student.parent_id == parent_id)
+            )
+        )
+    ).scalar_one_or_none()
+    if student is None:
+        raise AppError("forbidden", "Student not found or not your child", 403)
+
+    # Delete the absent_parent_marked record if it exists
+    await db.execute(
+        delete(AttendanceRecord).where(
+            and_(
+                AttendanceRecord.trip_id == trip_id,
+                AttendanceRecord.student_id == student_id,
+                AttendanceRecord.status == "absent_parent_marked",
+            )
+        )
+    )
+    await db.commit()
+
+    return {"student_id": student_id, "status": "cancelled"}
+
+
+async def list_trip_absences(
+    db: AsyncSession,
+    trip_id: uuid.UUID,
+    school_id: uuid.UUID | None,
+    driver_user_id: uuid.UUID,
+) -> list[dict]:
+    """
+    Driver retrieves list of parent-pre-marked absences for a trip.
+    Ownership check: must be the assigned driver.
+    """
+    from app.tracking.schemas import AbsenceListOut
+
+    trip = await get_scoped_or_404(db, Trip, trip_id, school_id)
+
+    if trip.driver_id != driver_user_id:
+        raise AppError("forbidden", "You are not assigned to this trip", 403)
+
+    # Load absent_parent_marked records for this trip
+    att_rows = (
+        await db.execute(
+            select(AttendanceRecord).where(
+                and_(
+                    AttendanceRecord.trip_id == trip_id,
+                    AttendanceRecord.status == "absent_parent_marked",
+                )
+            )
+        )
+    ).scalars().all()
+
+    if not att_rows:
+        return []
+
+    # Batch-load student names
+    student_ids = [r.student_id for r in att_rows]
+    students = {
+        s.id: s
+        for s in (
+            await db.execute(select(Student).where(Student.id.in_(student_ids)))
+        ).scalars().all()
+    }
+
+    result = []
+    for att in att_rows:
+        student = students.get(att.student_id)
+        result.append(
+            AbsenceListOut(
+                student_id=att.student_id,
+                student_name=student.full_name if student else str(att.student_id),
+                stop_id=att.stop_id,
+                marked_at=att.marked_at,
+            )
+        )
+    return result
