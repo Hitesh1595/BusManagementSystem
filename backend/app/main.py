@@ -155,7 +155,10 @@ app.include_router(trips_router)
 app.mount("/socket.io", sio_app)
 
 # Import socket handlers so @sio.on(...) registrations run at startup.
-import app.tracking.socket_handlers  # noqa: E402, F401
+# NOTE: use an aliased import — a bare `import app.tracking.socket_handlers`
+# would rebind the module-level name `app` to the package, clobbering the
+# FastAPI instance above.
+from app.tracking import socket_handlers as _socket_handlers  # noqa: E402, F401
 
 # Routers added per chunk:
 # app.include_router(notifications.router)
