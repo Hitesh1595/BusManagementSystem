@@ -16,6 +16,7 @@ from app.database import engine
 from app.errors import register_error_handlers
 from app.middleware import RateLimitMiddleware, RequestContextMiddleware
 from app.redis_client import redis_ok
+from app.schools import router as schools_router
 
 settings = get_settings()
 configure_logging(settings.LOG_LEVEL)
@@ -84,12 +85,12 @@ async def health() -> JSONResponse:
 
 
 app.include_router(auth_router.router)
+app.include_router(schools_router.router)
 
 # Mount Socket.IO last so REST routes win path matching.
 app.mount("/socket.io", sio_app)
 
 # Routers added per chunk:
-# app.include_router(schools.router)
 # app.include_router(vehicles.router)
 # app.include_router(routes.router)
 # app.include_router(tracking.router)
