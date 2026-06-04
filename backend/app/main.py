@@ -19,6 +19,7 @@ from app.redis_client import redis_ok
 from app.routes.router import router as routes_router
 from app.schools import router as schools_router
 from app.students.router import students_router, transport_router
+from app.tracking.router import router as trips_router
 from app.vehicles.router import drivers_router, vehicles_router
 
 settings = get_settings()
@@ -94,10 +95,10 @@ app.include_router(drivers_router)
 app.include_router(routes_router)
 app.include_router(students_router)
 app.include_router(transport_router)
+app.include_router(trips_router)
 
 # Mount Socket.IO last so REST routes win path matching.
 app.mount("/socket.io", sio_app)
 
 # Routers added per chunk:
-# app.include_router(tracking.router)
 # app.include_router(notifications.router)
