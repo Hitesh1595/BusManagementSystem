@@ -10,13 +10,12 @@ capacity CHECK (capacity > 0) enforced at DB level.
 from __future__ import annotations
 
 import uuid
-from datetime import date, datetime
+from datetime import date
 
 from sqlalchemy import (
     Boolean,
     CheckConstraint,
     Date,
-    DateTime,
     ForeignKey,
     Integer,
     String,
@@ -26,12 +25,12 @@ from sqlalchemy.dialects.postgresql import ENUM as PGEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.database import Base
+from app.database import Base, TimestampMixin
 
 VEHICLE_TYPE = ("bus", "van", "minibus", "car", "other")
 
 
-class Vehicle(Base):
+class Vehicle(Base, TimestampMixin):
     __tablename__ = "vehicles"
 
     __table_args__ = (
@@ -58,9 +57,3 @@ class Vehicle(Base):
     insurance_expiry: Mapped[date | None] = mapped_column(Date, nullable=True)
     fitness_expiry: Mapped[date | None] = mapped_column(Date, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, server_default="true")
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default="now()", nullable=False
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default="now()", nullable=False
-    )

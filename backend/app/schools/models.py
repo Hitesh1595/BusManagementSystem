@@ -7,17 +7,16 @@ this ORM model reflects the final schema.
 """
 
 import uuid
-from datetime import datetime
 
 from geoalchemy2 import Geography
-from sqlalchemy import Boolean, DateTime, String, Text
+from sqlalchemy import Boolean, String, Text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.database import Base
+from app.database import Base, TimestampMixin
 
 
-class School(Base):
+class School(Base, TimestampMixin):
     __tablename__ = "schools"
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -41,5 +40,3 @@ class School(Base):
     join_code: Mapped[str] = mapped_column(String(12), nullable=False, unique=True)
     settings: Mapped[dict] = mapped_column(JSONB, server_default="{}")
     is_active: Mapped[bool] = mapped_column(Boolean, server_default="true")
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default="now()")
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default="now()")

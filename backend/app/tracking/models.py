@@ -42,7 +42,7 @@ from sqlalchemy.dialects.postgresql import ENUM as PGEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.database import Base
+from app.database import Base, CreatedAtMixin, TimestampMixin
 
 TRIP_STATUS = (
     "scheduled",
@@ -54,7 +54,7 @@ TRIP_STATUS = (
 )
 
 
-class Trip(Base):
+class Trip(Base, TimestampMixin):
     __tablename__ = "trips"
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -93,12 +93,6 @@ class Trip(Base):
     )
     reassigned_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     reassignment_reason: Mapped[str | None] = mapped_column(String(120), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default="now()", nullable=False
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default="now()", nullable=False
-    )
 
 
 class GpsLog(Base):
@@ -130,7 +124,7 @@ ATTENDANCE_STATUS = ("boarded", "absent", "absent_parent_marked")
 DROP_TYPE = ("stop", "school")
 
 
-class AttendanceRecord(Base):
+class AttendanceRecord(Base, CreatedAtMixin):
     """
     Per-student boarding / absence record for one trip — spec §6.5.
 
@@ -186,7 +180,4 @@ class AttendanceRecord(Base):
     )
     dropped_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
-    )
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default="now()", nullable=False
     )

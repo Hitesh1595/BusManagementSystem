@@ -41,12 +41,12 @@ from sqlalchemy.dialects.postgresql import ENUM as PGEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.database import Base
+from app.database import Base, TimestampMixin
 
 REQUEST_STATUS = ("pending", "approved", "rejected", "assigned")
 
 
-class Student(Base):
+class Student(Base, TimestampMixin):
     __tablename__ = "students"
 
     __table_args__ = (
@@ -71,12 +71,6 @@ class Student(Base):
         Geography(geometry_type="POINT", srid=4326), nullable=True
     )
     is_active: Mapped[bool] = mapped_column(Boolean, server_default="true")
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default="now()", nullable=False
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default="now()", nullable=False
-    )
 
 
 class StudentRouteAssignment(Base):
@@ -107,7 +101,7 @@ class StudentRouteAssignment(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, server_default="true")
 
 
-class TransportRequest(Base):
+class TransportRequest(Base, TimestampMixin):
     __tablename__ = "transport_requests"
 
     __table_args__ = (
@@ -143,9 +137,3 @@ class TransportRequest(Base):
         UUID(as_uuid=True), ForeignKey("route_stops.id"), nullable=True
     )
     admin_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default="now()", nullable=False
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default="now()", nullable=False
-    )

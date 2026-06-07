@@ -11,17 +11,16 @@ committing the session (or the helper flushes immediately, no commit).
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
 from typing import Any
 
-from sqlalchemy import BigInteger, DateTime, ForeignKey, Index, String, Text
+from sqlalchemy import BigInteger, ForeignKey, Index, String, Text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.database import Base
+from app.database import Base, CreatedAtMixin
 
 
-class AuditLog(Base):
+class AuditLog(Base, CreatedAtMixin):
     __tablename__ = "audit_logs"
 
     __table_args__ = (
@@ -43,9 +42,6 @@ class AuditLog(Base):
     new_values: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     # Stored as text; Postgres accepts text→inet implicit cast in queries.
     ip_address: Mapped[str | None] = mapped_column(Text, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default="now()", nullable=False
-    )
 
 
 # ---------------------------------------------------------------------------

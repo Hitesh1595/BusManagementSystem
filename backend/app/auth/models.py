@@ -13,14 +13,14 @@ from sqlalchemy import Enum as SAEnum
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.database import Base
+from app.database import Base, CreatedAtMixin, TimestampMixin
 
 # Keep ROLE tuple in sync with the user_role enum created in migration 0001.
 ROLE = ("super_admin", "school_admin", "driver", "parent")
 AUTH_TOKEN_TYPE = ("password_reset", "email_verification")
 
 
-class User(Base):
+class User(Base, TimestampMixin):
     __tablename__ = "users"
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -42,11 +42,9 @@ class User(Base):
     # push_subscription is V2 (web-push); column created now so schema is forward-compatible.
     push_subscription: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default="now()")
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default="now()")
 
 
-class RefreshToken(Base):
+class RefreshToken(Base, CreatedAtMixin):
     __tablename__ = "refresh_tokens"
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -61,10 +59,9 @@ class RefreshToken(Base):
     issued_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default="now()")
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default="now()")
 
 
-class AuthToken(Base):
+class AuthToken(Base, CreatedAtMixin):
     __tablename__ = "auth_tokens"
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -79,4 +76,3 @@ class AuthToken(Base):
     )
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default="now()")

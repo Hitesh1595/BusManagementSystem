@@ -24,7 +24,7 @@ from sqlalchemy.dialects.postgresql import ENUM as PGEnum
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.database import Base
+from app.database import Base, CreatedAtMixin
 
 ALERT_TYPE = (
     "child_not_boarded",
@@ -39,7 +39,7 @@ ALERT_TYPE = (
 ALERT_SEVERITY = ("critical", "high", "medium", "low")
 
 
-class Alert(Base):
+class Alert(Base, CreatedAtMixin):
     __tablename__ = "alerts"
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -81,7 +81,4 @@ class Alert(Base):
         JSONB,
         nullable=False,
         server_default="{}",
-    )
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default="now()", nullable=False
     )

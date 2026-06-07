@@ -17,12 +17,11 @@ NOTE: student_route_assignments and transport_requests are Part D (Task 3.4).
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, time
+from datetime import time
 
 from geoalchemy2 import Geography
 from sqlalchemy import (
     Boolean,
-    DateTime,
     ForeignKey,
     Integer,
     String,
@@ -34,12 +33,12 @@ from sqlalchemy.dialects.postgresql import ENUM as PGEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.database import Base
+from app.database import Base, CreatedAtMixin, TimestampMixin
 
 SCHEDULE_TYPE = ("morning", "evening", "both")
 
 
-class Route(Base):
+class Route(Base, TimestampMixin):
     __tablename__ = "routes"
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -66,15 +65,9 @@ class Route(Base):
     )
     version: Mapped[int] = mapped_column(Integer, nullable=False, server_default="1")
     is_active: Mapped[bool] = mapped_column(Boolean, server_default="true")
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default="now()", nullable=False
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default="now()", nullable=False
-    )
 
 
-class RouteStop(Base):
+class RouteStop(Base, CreatedAtMixin):
     __tablename__ = "route_stops"
 
     __table_args__ = (
@@ -96,6 +89,3 @@ class RouteStop(Base):
     address: Mapped[str | None] = mapped_column(Text, nullable=True)
     stop_order: Mapped[int] = mapped_column(Integer, nullable=False)
     arrival_time: Mapped[time | None] = mapped_column(Time, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default="now()", nullable=False
-    )
