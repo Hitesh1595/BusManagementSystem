@@ -953,3 +953,33 @@ async def list_trip_absences(
             )
         )
     return result
+
+
+# ---------------------------------------------------------------------------
+# Trip stops (read) — for driver run-trip + parent live-track maps
+# ---------------------------------------------------------------------------
+
+
+async def get_trip_stops(
+    db: AsyncSession,
+    trip_id: uuid.UUID,
+    school_id: uuid.UUID | None,
+):
+    """
+    Return the ordered stops of a trip's route.
+
+    The routes module itself is admin-only, but the driver run-trip screen and
+    parent live-track map need the stop geometry/order. Authorized at the same
+    level as GET /trips/{id} (any trip viewer in the school) and scoped by
+    school_id.
+    """
+    from app.routes.services import _load_stops, _stop_out
+
+    trip = (
+        await db.execute(select(Trip).where(Trip.id == trip_id))
+    ).scalar_one_or_none()
+    if trip is None or (school_id is not None and trip.school_id != school_id):
+        raise AppError("not_found", "Trip not found", 404)
+
+    stops = await _load_stops(db, trip.route_id)
+    return [_stop_out(s) for s in stops]

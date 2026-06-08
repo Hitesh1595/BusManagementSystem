@@ -1,0 +1,12 @@
+{
+  "dashboard": {
+    "title": "My children",
+    "addChild": "Add child",
+    "noChildren": "Add your child to get started.",
+    "todaysTrip": "Today's trip",
+    "noTrip": "No trip scheduled today.",
+    "trackLive": "Track live",
+    "route": "Route",
+    "stop": "Stop"
+  }
+}

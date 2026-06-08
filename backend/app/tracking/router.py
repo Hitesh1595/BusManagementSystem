@@ -16,6 +16,7 @@ from fastapi import APIRouter, Depends, Query
 
 from app.deps import DbDep, SchoolScopeDep, require_role
 from app.errors import AppError
+from app.routes.schemas import StopOut
 from app.tracking import services
 from app.tracking.schemas import (
     AbsenceListOut,
@@ -180,6 +181,22 @@ async def get_gps_log(
 ) -> GpsLogGeoJSON:
     """Return historical GPS trace as GeoJSON LineString."""
     return await services.get_gps_log(db, trip_id, school_id)
+
+
+# ---------------------------------------------------------------------------
+# Trip stops (any trip viewer) — drives driver run-trip + parent live-track maps
+# ---------------------------------------------------------------------------
+
+
+@router.get("/{trip_id}/stops")
+async def get_trip_stops(
+    trip_id: UUID,
+    db: DbDep,
+    claims: _AnyAuthDep,
+    school_id: SchoolScopeDep,
+) -> list[StopOut]:
+    """Return the ordered stops of the trip's route."""
+    return await services.get_trip_stops(db, trip_id, school_id)
 
 
 # ---------------------------------------------------------------------------

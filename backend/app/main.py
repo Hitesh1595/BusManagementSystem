@@ -16,6 +16,7 @@ from app.core.socketio import sio_app
 from app.database import engine
 from app.errors import register_error_handlers
 from app.middleware import RateLimitMiddleware, RequestContextMiddleware
+from app.notifications.router import router as notifications_router
 from app.redis_client import redis_ok
 from app.routes.router import router as routes_router
 from app.schools import router as schools_router
@@ -152,6 +153,7 @@ app.include_router(students_router)
 app.include_router(transport_router)
 app.include_router(trips_router)
 app.include_router(alerts_router)
+app.include_router(notifications_router)
 
 # Mount Socket.IO last so REST routes win path matching.
 app.mount("/socket.io", sio_app)

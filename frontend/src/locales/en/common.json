@@ -1,0 +1,85 @@
+{
+  "app": {
+    "name": "YatraTrack",
+    "tagline": "Children's journey, Safe & Tracked."
+  },
+  "actions": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "remove": "Remove",
+    "edit": "Edit",
+    "add": "Add",
+    "create": "Create",
+    "update": "Update",
+    "confirm": "Confirm",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "retry": "Retry",
+    "search": "Search",
+    "submit": "Submit",
+    "viewAll": "View all",
+    "view": "View",
+    "done": "Done",
+    "saving": "Saving…",
+    "loading": "Loading…"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "track": "Track",
+    "requests": "Requests",
+    "notifications": "Notifications",
+    "vehicles": "Vehicles",
+    "routes": "Routes",
+    "drivers": "Drivers",
+    "fleet": "Fleet",
+    "alerts": "Alerts",
+    "settings": "Settings",
+    "logout": "Log out",
+    "profile": "Profile",
+    "children": "Children",
+    "today": "Today",
+    "students": "Students"
+  },
+  "status": {
+    "scheduled": "Scheduled",
+    "in_progress": "In progress",
+    "pending_safeguard_check": "Safety check",
+    "completed": "Completed",
+    "cancelled": "Cancelled",
+    "incident": "Incident"
+  },
+  "slot": {
+    "morning": "Morning",
+    "evening": "Evening"
+  },
+  "connection": {
+    "online": "Live",
+    "connecting": "Connecting…",
+    "reconnecting": "Reconnecting…",
+    "offline": "Offline — showing last known data",
+    "paused": "Tracking paused"
+  },
+  "empty": {
+    "default": "Nothing here yet.",
+    "search": "No results found."
+  },
+  "errors": {
+    "generic": "Something went wrong.",
+    "network": "Network error. Check your connection.",
+    "notFound": "Not found.",
+    "forbidden": "You don't have permission to do that."
+  },
+  "labels": {
+    "fullName": "Full name",
+    "email": "Email",
+    "phone": "Phone",
+    "password": "Password",
+    "grade": "Grade",
+    "section": "Section",
+    "address": "Address",
+    "optional": "optional",
+    "required": "required"
+  }
+}

@@ -1,0 +1,498 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>YatraTrack — बच्चों का सफर, Safe &amp; Tracked. | School Bus Tracking for India</title>
+  <meta name="description" content="YatraTrack helps Indian schools track school buses live on GPS, mark attendance, and send child-safety alerts to parents. No app install needed — works on any phone browser." />
+  <meta name="theme-color" content="#4f46e5" />
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="YatraTrack — बच्चों का सफर, Safe &amp; Tracked." />
+  <meta property="og:description" content="Live school-bus GPS tracking, attendance and child-safety alerts for Indian schools. No app install needed." />
+  <meta property="og:url" content="https://yatratrack.in" />
+
+  <link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;rect width='100' height='100' rx='22' fill='%234f46e5'/&gt;&lt;text x='50' y='68' font-size='62' text-anchor='middle' fill='white' font-family='system-ui,sans-serif' font-weight='700'&gt;Y&lt;/text&gt;&lt;/svg&gt;" />
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            indigo: {
+              50: '#eef2ff', 100: '#e0e7ff', 200: '#c7d2fe', 300: '#a5b4fc',
+              400: '#818cf8', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca',
+              800: '#3730a3', 900: '#312e81', 950: '#1e1b4b',
+            },
+            whatsapp: '#25d366',
+            ink: '#1e1b4b',
+            body: '#6b7280',
+          },
+          fontFamily: {
+            sans: ['system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'],
+          },
+          boxShadow: {
+            soft: '0 1px 2px rgba(30,27,75,0.04), 0 8px 24px -8px rgba(79,70,229,0.18)',
+            lift: '0 10px 40px -12px rgba(79,70,229,0.28)',
+          },
+        },
+      },
+    };
+  </script>
+
+  <style>
+    html { scroll-behavior: smooth; }
+    body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+
+    /* 3px indigo top stripe */
+    .top-stripe { height: 3px; background: #4f46e5; }
+
+    /* Radial indigo hero glow */
+    .hero-glow {
+      background:
+        radial-gradient(60% 50% at 50% 0%, rgba(99,102,241,0.10) 0%, rgba(99,102,241,0.04) 38%, rgba(255,255,255,0) 72%),
+        radial-gradient(40% 38% at 82% 22%, rgba(99,102,241,0.07) 0%, rgba(255,255,255,0) 70%);
+    }
+
+    /* Subtle dot grid behind the mock map */
+    .dot-grid {
+      background-image: radial-gradient(rgba(79,70,229,0.10) 1px, transparent 1px);
+      background-size: 22px 22px;
+    }
+
+    /* Pulsing live bus dot */
+    .bus-dot { position: relative; }
+    .bus-dot::before {
+      content: ''; position: absolute; inset: -10px; border-radius: 9999px;
+      background: rgba(79,70,229,0.35); animation: pulse 1.8s ease-out infinite;
+    }
+    @keyframes pulse {
+      0%   { transform: scale(0.6); opacity: 0.8; }
+      70%  { transform: scale(2.4); opacity: 0; }
+      100% { transform: scale(2.4); opacity: 0; }
+    }
+
+    /* LIVE badge blink */
+    .live-dot { animation: blink 1.2s steps(2, start) infinite; }
+    @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.25; } }
+
+    /* Bus gently traveling along the route */
+    .bus-travel { animation: travel 9s ease-in-out infinite alternate; }
+    @keyframes travel {
+      0%   { offset-distance: 6%; }
+      100% { offset-distance: 92%; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .bus-dot::before, .live-dot, .bus-travel { animation: none; }
+    }
+
+    a { -webkit-tap-highlight-color: transparent; }
+    :focus-visible { outline: 3px solid #818cf8; outline-offset: 2px; border-radius: 6px; }
+  </style>
+</head>
+
+<body class="bg-white font-sans text-body antialiased">
+  <div class="top-stripe" role="presentation"></div>
+
+  <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-indigo-600 focus:px-4 focus:py-2 focus:text-white">Skip to content</a>
+
+  <!-- ============ STICKY NAV ============ -->
+  <header class="sticky top-0 z-40 border-b border-[#e5e7eb] bg-white/85 backdrop-blur-md">
+    <nav aria-label="Primary" class="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
+      <a href="#main" class="flex items-center gap-2.5" aria-label="YatraTrack home">
+        <span class="grid h-9 w-9 place-items-center rounded-xl bg-indigo-600 text-base font-bold text-white shadow-soft">Y</span>
+        <span class="text-lg font-bold tracking-tight text-ink">Yatra<span class="text-indigo-600">Track</span></span>
+      </a>
+
+      <div class="hidden items-center gap-8 md:flex">
+        <a href="#features" class="text-sm font-medium text-ink/70 transition hover:text-indigo-600">Features</a>
+        <a href="#how" class="text-sm font-medium text-ink/70 transition hover:text-indigo-600">How it works</a>
+        <a href="#pricing" class="text-sm font-medium text-ink/70 transition hover:text-indigo-600">Pricing</a>
+        <a href="#contact" class="text-sm font-medium text-ink/70 transition hover:text-indigo-600">Contact</a>
+      </div>
+
+      <div class="flex items-center gap-2 sm:gap-3">
+        <a href="mailto:hello@yatratrack.in"
+           class="hidden rounded-lg border border-[#e5e7eb] px-4 py-2 text-sm font-semibold text-ink transition hover:border-indigo-300 hover:bg-indigo-50 sm:inline-block">
+          Contact Us
+        </a>
+        <a href="https://wa.me/91XXXXXXXXXX?text=Hi%2C%20I'm%20interested%20in%20YatraTrack%20for%20my%20school"
+           class="inline-flex items-center gap-2 rounded-lg bg-whatsapp px-4 py-2 text-sm font-semibold text-white shadow-soft transition hover:brightness-95"
+           aria-label="Chat with YatraTrack on WhatsApp">
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M.057 24l1.687-6.163a11.867 11.867 0 01-1.587-5.946C.16 5.335 5.495 0 12.05 0a11.82 11.82 0 018.413 3.488 11.82 11.82 0 013.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 01-5.688-1.448L.057 24zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884a9.86 9.86 0 001.516 5.26l-.999 3.648 3.972-.607zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.71.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+          WhatsApp
+        </a>
+      </div>
+    </nav>
+  </header>
+
+  <main id="main">
+
+    <!-- ============ HERO ============ -->
+    <section class="hero-glow relative overflow-hidden">
+      <div class="mx-auto max-w-6xl px-4 pb-12 pt-14 sm:px-6 sm:pt-20 lg:pb-20">
+        <div class="grid items-center gap-12 lg:grid-cols-2">
+          <!-- Copy -->
+          <div class="text-center lg:text-left">
+            <span class="inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50 px-3.5 py-1.5 text-sm font-semibold text-indigo-700">
+              Made for Indian Schools <span aria-hidden="true">🇮🇳</span>
+            </span>
+
+            <h1 class="mt-6 text-4xl font-extrabold leading-[1.1] tracking-tight text-ink sm:text-5xl lg:text-6xl">
+              बच्चों का सफर,<br class="hidden sm:block" />
+              <span class="text-indigo-600">Safe &amp; Tracked.</span>
+            </h1>
+            <p class="mt-3 text-lg font-medium text-ink/70">Children's journey, Safe &amp; Tracked.</p>
+
+            <p class="mx-auto mt-5 max-w-xl text-base leading-relaxed text-body sm:text-lg lg:mx-0">
+              Live bus location, attendance, aur child-safety alerts — sab kuch ek jagah.
+              Parents ko pata rehta hai bus kahan hai aur bachcha safely board hua ya nahi.
+              <span class="font-semibold text-ink">No app install needed</span> — koi bhi phone browser mein chalta hai.
+            </p>
+
+            <div class="mt-8 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-center lg:justify-start">
+              <a href="https://wa.me/91XXXXXXXXXX?text=Hi%2C%20I'm%20interested%20in%20YatraTrack%20for%20my%20school"
+                 class="inline-flex items-center justify-center gap-2 rounded-xl bg-whatsapp px-6 py-3.5 text-base font-semibold text-white shadow-lift transition hover:brightness-95">
+                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M.057 24l1.687-6.163a11.867 11.867 0 01-1.587-5.946C.16 5.335 5.495 0 12.05 0a11.82 11.82 0 018.413 3.488 11.82 11.82 0 013.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 01-5.688-1.448L.057 24zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884a9.86 9.86 0 001.516 5.26l-.999 3.648 3.972-.607zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.71.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+                WhatsApp Us
+              </a>
+              <a href="mailto:hello@yatratrack.in"
+                 class="inline-flex items-center justify-center gap-2 rounded-xl border border-[#e5e7eb] bg-white px-6 py-3.5 text-base font-semibold text-ink transition hover:border-indigo-300 hover:bg-indigo-50">
+                <span aria-hidden="true">✉️</span> hello@yatratrack.in
+              </a>
+            </div>
+
+            <!-- Trust badges -->
+            <ul class="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm font-medium text-ink/70 lg:justify-start" aria-label="Why schools trust YatraTrack">
+              <li class="inline-flex items-center gap-1.5"><span class="text-indigo-600" aria-hidden="true">✓</span> Live GPS</li>
+              <li class="inline-flex items-center gap-1.5"><span class="text-indigo-600" aria-hidden="true">✓</span> Safety alerts</li>
+              <li class="inline-flex items-center gap-1.5"><span class="text-indigo-600" aria-hidden="true">✓</span> No app needed</li>
+              <li class="inline-flex items-center gap-1.5"><span class="text-indigo-600" aria-hidden="true">✓</span> Any phone browser</li>
+            </ul>
+          </div>
+
+          <!-- ============ DASHBOARD PREVIEW (CSS mockup) ============ -->
+          <div class="relative">
+            <div class="mx-auto max-w-md rounded-2xl border border-[#e5e7eb] bg-white p-3 shadow-lift">
+              <!-- window chrome -->
+              <div class="flex items-center justify-between px-2 py-1.5">
+                <div class="flex items-center gap-1.5" aria-hidden="true">
+                  <span class="h-2.5 w-2.5 rounded-full bg-[#e5e7eb]"></span>
+                  <span class="h-2.5 w-2.5 rounded-full bg-[#e5e7eb]"></span>
+                  <span class="h-2.5 w-2.5 rounded-full bg-[#e5e7eb]"></span>
+                </div>
+                <span class="rounded-md bg-indigo-50 px-2 py-0.5 text-[11px] font-semibold text-indigo-700">Morning route · Bus 04</span>
+              </div>
+
+              <!-- fake live map -->
+              <div class="dot-grid relative mt-2 h-64 overflow-hidden rounded-xl border border-[#e5e7eb] bg-[#fafafa]" role="img" aria-label="Live map preview showing a school bus moving along its route between stops toward the school">
+                <!-- LIVE badge -->
+                <div class="absolute left-3 top-3 z-20 inline-flex items-center gap-1.5 rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-bold text-red-600 shadow-soft ring-1 ring-red-100 backdrop-blur">
+                  <span class="live-dot inline-block h-2 w-2 rounded-full bg-red-600"></span> LIVE
+                </div>
+                <!-- ETA chip -->
+                <div class="absolute right-3 top-3 z-20 rounded-full bg-indigo-600 px-2.5 py-1 text-[11px] font-semibold text-white shadow-soft">
+                  ETA next stop · 4 min
+                </div>
+
+                <!-- route line + stops -->
+                <svg class="absolute inset-0 h-full w-full" viewBox="0 0 360 260" fill="none" preserveAspectRatio="none" aria-hidden="true">
+                  <path id="routePath" d="M 40 210 C 110 190, 90 120, 170 120 S 260 70, 320 50"
+                        stroke="#4f46e5" stroke-width="4" stroke-linecap="round" stroke-dasharray="2 11" opacity="0.5"/>
+                  <!-- stop dots -->
+                  <circle cx="40" cy="210" r="7" fill="#ffffff" stroke="#4f46e5" stroke-width="3"/>
+                  <circle cx="170" cy="120" r="7" fill="#ffffff" stroke="#4f46e5" stroke-width="3"/>
+                  <!-- school marker -->
+                  <rect x="312" y="42" width="16" height="16" rx="3" fill="#4f46e5"/>
+                </svg>
+
+                <!-- traveling pulsing bus dot, follows the route path -->
+                <div class="bus-travel absolute left-0 top-0 z-10" style="offset-path: path('M 40 210 C 110 190, 90 120, 170 120 S 260 70, 320 50'); offset-rotate: 0deg;">
+                  <div class="bus-dot grid h-7 w-7 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-indigo-600 text-white shadow-lift ring-2 ring-white">
+                    <svg class="relative z-10 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M8 6v6"/><path d="M15 6v6"/><path d="M2 12h19.6"/><path d="M18 18h3s.5-1.7.8-2.8c.1-.4.2-.8.2-1.2 0-.4-.1-.8-.2-1.2l-1.4-5C20.1 6.8 19.1 6 18 6H4a2 2 0 0 0-2 2v10h3"/><circle cx="7" cy="18" r="2"/><path d="M9 18h5"/><circle cx="16" cy="18" r="2"/>
+                    </svg>
+                  </div>
+                </div>
+
+                <!-- stop labels -->
+                <span class="absolute bottom-3 left-3 z-10 rounded-md bg-white/85 px-2 py-0.5 text-[10px] font-medium text-ink/70 backdrop-blur">Stop 1 · Picked up</span>
+                <span class="absolute right-3 top-12 z-10 rounded-md bg-white/85 px-2 py-0.5 text-[10px] font-medium text-ink/70 backdrop-blur">🏫 School</span>
+              </div>
+
+              <!-- stat cards -->
+              <div class="mt-3 grid grid-cols-3 gap-2">
+                <div class="rounded-lg bg-indigo-50 p-2.5 text-center">
+                  <div class="text-lg font-bold text-indigo-700">28</div>
+                  <div class="text-[10px] font-medium text-ink/60">Boarded</div>
+                </div>
+                <div class="rounded-lg bg-[#f9fafb] p-2.5 text-center ring-1 ring-[#e5e7eb]">
+                  <div class="text-lg font-bold text-ink">32 km/h</div>
+                  <div class="text-[10px] font-medium text-ink/60">Speed</div>
+                </div>
+                <div class="rounded-lg bg-green-50 p-2.5 text-center">
+                  <div class="text-lg font-bold text-green-700">On time</div>
+                  <div class="text-[10px] font-medium text-ink/60">Status</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- floating safety toast -->
+            <div class="absolute -bottom-4 left-1/2 z-20 w-[88%] max-w-xs -translate-x-1/2 rounded-xl border border-[#e5e7eb] bg-white p-3 shadow-lift sm:-left-6 sm:translate-x-0">
+              <div class="flex items-start gap-3">
+                <span class="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-green-50 text-green-600" aria-hidden="true">
+                  <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                </span>
+                <div>
+                  <p class="text-sm font-semibold text-ink">Aarav boarded the bus ✅</p>
+                  <p class="text-xs text-body">Stop 1 · 7:42 AM · Parent notified</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ FEATURES ============ -->
+    <section id="features" class="border-t border-[#e5e7eb] bg-[#fafafa] py-16 sm:py-20" aria-labelledby="features-heading">
+      <div class="mx-auto max-w-6xl px-4 sm:px-6">
+        <div class="mx-auto max-w-2xl text-center">
+          <p class="text-sm font-semibold uppercase tracking-wider text-indigo-600">Features</p>
+          <h2 id="features-heading" class="mt-2 text-3xl font-extrabold tracking-tight text-ink sm:text-4xl">Sab kuch jo school ko chahiye</h2>
+          <p class="mt-4 text-base text-body">Ek simple platform — tracking se lekar safety tak. School, drivers aur parents, sab ek page par.</p>
+        </div>
+
+        <div class="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <!-- 1. Live GPS -->
+          <article class="rounded-xl border border-[#e5e7eb] bg-white p-6 shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift">
+            <span class="grid h-11 w-11 place-items-center rounded-xl bg-indigo-50 text-indigo-600" aria-hidden="true">
+              <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>
+            </span>
+            <h3 class="mt-4 text-lg font-bold text-ink">Live GPS tracking</h3>
+            <p class="mt-2 text-sm leading-relaxed text-body">Bus ki real-time location map par dekho — ETA ke saath. Parents ko har second pata rahega bus kahan hai.</p>
+          </article>
+
+          <!-- 2. Attendance -->
+          <article class="rounded-xl border border-[#e5e7eb] bg-white p-6 shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift">
+            <span class="grid h-11 w-11 place-items-center rounded-xl bg-indigo-50 text-indigo-600" aria-hidden="true">
+              <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 12H3"/><path d="M16 6H3"/><path d="M16 18H3"/><path d="m15 12 2.5 2.5L22 10"/></svg>
+            </span>
+            <h3 class="mt-4 text-lg font-bold text-ink">Attendance</h3>
+            <p class="mt-2 text-sm leading-relaxed text-body">Driver har stop par ek tap mein attendance mark karta hai. Boarded ya absent — record automatic save ho jaata hai.</p>
+          </article>
+
+          <!-- 3. Child-safety alerts -->
+          <article class="rounded-xl border border-[#e5e7eb] bg-white p-6 shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift">
+            <span class="grid h-11 w-11 place-items-center rounded-xl bg-indigo-50 text-indigo-600" aria-hidden="true">
+              <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>
+            </span>
+            <h3 class="mt-4 text-lg font-bold text-ink">Child-safety alerts</h3>
+            <p class="mt-2 text-sm leading-relaxed text-body">Agar koi bachcha board nahi hua ya drop nahi hua, school aur parents ko turant alert milta hai. Trip safely complete hone tak nazar.</p>
+          </article>
+
+          <!-- 4. No app install -->
+          <article class="rounded-xl border border-[#e5e7eb] bg-white p-6 shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift">
+            <span class="grid h-11 w-11 place-items-center rounded-xl bg-indigo-50 text-indigo-600" aria-hidden="true">
+              <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12a5 5 0 0 0 5 5 8 8 0 0 1 5 2 8 8 0 0 1 5-2 5 5 0 0 0 5-5V7H2Z"/><path d="M6 11V7"/><path d="M10 11V7"/><path d="M14 11V7"/><path d="M18 11V7"/></svg>
+            </span>
+            <h3 class="mt-4 text-lg font-bold text-ink">No app install needed</h3>
+            <p class="mt-2 text-sm leading-relaxed text-body">App store ke chakkar nahi. Bas link kholo aur track karo. Parents ka phone storage free, no updates, no hassle.</p>
+          </article>
+
+          <!-- 5. Works on any phone browser -->
+          <article class="rounded-xl border border-[#e5e7eb] bg-white p-6 shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift">
+            <span class="grid h-11 w-11 place-items-center rounded-xl bg-indigo-50 text-indigo-600" aria-hidden="true">
+              <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg>
+            </span>
+            <h3 class="mt-4 text-lg font-bold text-ink">Works on any phone browser</h3>
+            <p class="mt-2 text-sm leading-relaxed text-body">Android ho ya iPhone, naya ho ya purana — koi bhi browser mein chalta hai. Low data, fast loading.</p>
+          </article>
+
+          <!-- 6. Affordable -->
+          <article class="rounded-xl border border-[#e5e7eb] bg-white p-6 shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift">
+            <span class="grid h-11 w-11 place-items-center rounded-xl bg-indigo-50 text-indigo-600" aria-hidden="true">
+              <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12"/><path d="M6 8h12"/><path d="m6 13 8.5 8"/><path d="M6 13h3"/><path d="M9 13c6.667 0 6.667-10 0-10"/></svg>
+            </span>
+            <h3 class="mt-4 text-lg font-bold text-ink">Affordable for Indian schools</h3>
+            <p class="mt-2 text-sm leading-relaxed text-body">Mehngi hardware ya costly GPS device ki zaroorat nahi. Budget-friendly pricing jo har school afford kar sake.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ HOW IT WORKS ============ -->
+    <section id="how" class="py-16 sm:py-20" aria-labelledby="how-heading">
+      <div class="mx-auto max-w-6xl px-4 sm:px-6">
+        <div class="mx-auto max-w-2xl text-center">
+          <p class="text-sm font-semibold uppercase tracking-wider text-indigo-600">How it works</p>
+          <h2 id="how-heading" class="mt-2 text-3xl font-extrabold tracking-tight text-ink sm:text-4xl">Teen simple steps</h2>
+          <p class="mt-4 text-base text-body">Setup mein minutes lagte hain. Na hardware, na training — bas shuru karo.</p>
+        </div>
+
+        <ol class="mt-12 grid gap-6 md:grid-cols-3">
+          <li class="relative rounded-xl border border-[#e5e7eb] bg-white p-6 shadow-soft">
+            <span class="grid h-10 w-10 place-items-center rounded-full bg-indigo-600 text-base font-bold text-white">1</span>
+            <h3 class="mt-4 text-lg font-bold text-ink">School sets up routes</h3>
+            <p class="mt-2 text-sm leading-relaxed text-body">Admin routes aur stops banata hai, drivers aur buses assign karta hai. Sab kuch ek dashboard se.</p>
+          </li>
+          <li class="relative rounded-xl border border-[#e5e7eb] bg-white p-6 shadow-soft">
+            <span class="grid h-10 w-10 place-items-center rounded-full bg-indigo-600 text-base font-bold text-white">2</span>
+            <h3 class="mt-4 text-lg font-bold text-ink">Parents join with a code</h3>
+            <p class="mt-2 text-sm leading-relaxed text-body">School ka join code share karo. Parents khud register karte hain — bachche ko link karo, ho gaya.</p>
+          </li>
+          <li class="relative rounded-xl border border-[#e5e7eb] bg-white p-6 shadow-soft">
+            <span class="grid h-10 w-10 place-items-center rounded-full bg-indigo-600 text-base font-bold text-white">3</span>
+            <h3 class="mt-4 text-lg font-bold text-ink">Track the bus live</h3>
+            <p class="mt-2 text-sm leading-relaxed text-body">Bus chalti hai, parents live location dekhte hain aur safety alerts paate hain. Tension free.</p>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- ============ BUILT FOR ============ -->
+    <section class="border-t border-[#e5e7eb] bg-[#fafafa] py-16 sm:py-20" aria-labelledby="builtfor-heading">
+      <div class="mx-auto max-w-6xl px-4 sm:px-6">
+        <div class="mx-auto max-w-2xl text-center">
+          <p class="text-sm font-semibold uppercase tracking-wider text-indigo-600">Built for everyone</p>
+          <h2 id="builtfor-heading" class="mt-2 text-3xl font-extrabold tracking-tight text-ink sm:text-4xl">Har role ke liye banaya gaya</h2>
+        </div>
+
+        <div class="mt-12 grid gap-6 md:grid-cols-3">
+          <!-- Parents -->
+          <article class="rounded-2xl border border-[#e5e7eb] bg-white p-7 shadow-soft">
+            <span class="grid h-12 w-12 place-items-center rounded-xl bg-indigo-50 text-indigo-600" aria-hidden="true">
+              <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0"/><path d="M12 14a7 7 0 0 0-7 7h14a7 7 0 0 0-7-7"/></svg>
+            </span>
+            <h3 class="mt-4 text-xl font-bold text-ink">Parents</h3>
+            <p class="mt-2 text-sm leading-relaxed text-body">Bus live track karo, board/drop notifications pao, aur mann ki shanti. Bachcha safe pahuncha — confirm.</p>
+          </article>
+
+          <!-- Drivers -->
+          <article class="rounded-2xl border border-[#e5e7eb] bg-white p-7 shadow-soft">
+            <span class="grid h-12 w-12 place-items-center rounded-xl bg-indigo-50 text-indigo-600" aria-hidden="true">
+              <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6v6"/><path d="M15 6v6"/><path d="M2 12h19.6"/><path d="M18 18h3s.5-1.7.8-2.8c.1-.4.2-.8.2-1.2 0-.4-.1-.8-.2-1.2l-1.4-5C20.1 6.8 19.1 6 18 6H4a2 2 0 0 0-2 2v10h3"/><circle cx="7" cy="18" r="2"/><path d="M9 18h5"/><circle cx="16" cy="18" r="2"/></svg>
+            </span>
+            <h3 class="mt-4 text-xl font-bold text-ink">Drivers</h3>
+            <p class="mt-2 text-sm leading-relaxed text-body">Bade buttons, simple screen. Trip start karo, attendance lo, drop karo — sab kuch ek tap mein, driving ke beech.</p>
+          </article>
+
+          <!-- Schools -->
+          <article class="rounded-2xl border border-[#e5e7eb] bg-white p-7 shadow-soft">
+            <span class="grid h-12 w-12 place-items-center rounded-xl bg-indigo-50 text-indigo-600" aria-hidden="true">
+              <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m4 6 8-4 8 4"/><path d="m18 10 4 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-8l4-2"/><path d="M14 22v-4a2 2 0 0 0-2-2 2 2 0 0 0-2 2v4"/><path d="M18 5v17"/><path d="M6 5v17"/><circle cx="12" cy="9" r="2"/></svg>
+            </span>
+            <h3 class="mt-4 text-xl font-bold text-ink">Schools</h3>
+            <p class="mt-2 text-sm leading-relaxed text-body">Poori fleet ek dashboard se manage karo — routes, drivers, students, aur safety records. Parents ka bharosa badhao.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ PRICING TEASER ============ -->
+    <section id="pricing" class="py-16 sm:py-20" aria-labelledby="pricing-heading">
+      <div class="mx-auto max-w-3xl px-4 sm:px-6">
+        <div class="overflow-hidden rounded-3xl border border-indigo-100 bg-gradient-to-b from-indigo-50 to-white p-8 text-center shadow-soft sm:p-12">
+          <p class="text-sm font-semibold uppercase tracking-wider text-indigo-600">Pricing</p>
+          <h2 id="pricing-heading" class="mt-2 text-3xl font-extrabold tracking-tight text-ink sm:text-4xl">Simple, school-friendly pricing</h2>
+          <p class="mx-auto mt-4 max-w-xl text-base leading-relaxed text-body">
+            Aapke school ke size ke hisaab se plan. Koi hidden charges nahi, koi mehengi device nahi.
+            WhatsApp par baat karein — hum aapke liye sahi plan suggest karenge.
+          </p>
+
+          <div class="mt-7 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
+            <a href="https://wa.me/91XXXXXXXXXX?text=Hi%2C%20I'd%20like%20pricing%20for%20YatraTrack"
+               class="inline-flex items-center justify-center gap-2 rounded-xl bg-whatsapp px-6 py-3.5 text-base font-semibold text-white shadow-lift transition hover:brightness-95">
+              <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M.057 24l1.687-6.163a11.867 11.867 0 01-1.587-5.946C.16 5.335 5.495 0 12.05 0a11.82 11.82 0 018.413 3.488 11.82 11.82 0 013.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 01-5.688-1.448L.057 24zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884a9.86 9.86 0 001.516 5.26l-.999 3.648 3.972-.607zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.71.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+              WhatsApp for pricing
+            </a>
+            <a href="mailto:hello@yatratrack.in?subject=YatraTrack%20pricing"
+               class="inline-flex items-center justify-center gap-2 rounded-xl border border-[#e5e7eb] bg-white px-6 py-3.5 text-base font-semibold text-ink transition hover:border-indigo-300 hover:bg-indigo-50">
+              <span aria-hidden="true">✉️</span> Email us
+            </a>
+          </div>
+
+          <p class="mt-5 text-sm font-medium text-ink/60">No spam · No sales pressure · No commitment</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ FINAL CTA ============ -->
+    <section class="bg-indigo-600" aria-labelledby="cta-heading">
+      <div class="mx-auto max-w-4xl px-4 py-14 text-center sm:px-6 sm:py-16">
+        <h2 id="cta-heading" class="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">Apne school ki buses ko safe banaiye</h2>
+        <p class="mx-auto mt-4 max-w-xl text-base text-indigo-100">Ek WhatsApp message bhejiye — hum aapke school ke liye sab set up kar denge.</p>
+        <div class="mt-7 flex justify-center">
+          <a href="https://wa.me/91XXXXXXXXXX?text=Hi%2C%20I'm%20interested%20in%20YatraTrack%20for%20my%20school"
+             class="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-7 py-3.5 text-base font-semibold text-indigo-700 shadow-lift transition hover:bg-indigo-50">
+            <svg class="h-5 w-5 text-whatsapp" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M.057 24l1.687-6.163a11.867 11.867 0 01-1.587-5.946C.16 5.335 5.495 0 12.05 0a11.82 11.82 0 018.413 3.488 11.82 11.82 0 013.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 01-5.688-1.448L.057 24zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884a9.86 9.86 0 001.516 5.26l-.999 3.648 3.972-.607zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.71.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+            Chat on WhatsApp
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ============ FOOTER ============ -->
+  <footer id="contact" class="border-t border-[#e5e7eb] bg-white" aria-labelledby="footer-heading">
+    <h2 id="footer-heading" class="sr-only">Contact and site footer</h2>
+    <div class="mx-auto max-w-6xl px-4 py-12 sm:px-6">
+      <div class="grid gap-10 md:grid-cols-3">
+        <!-- brand -->
+        <div>
+          <a href="#main" class="flex items-center gap-2.5" aria-label="YatraTrack home">
+            <span class="grid h-9 w-9 place-items-center rounded-xl bg-indigo-600 text-base font-bold text-white">Y</span>
+            <span class="text-lg font-bold tracking-tight text-ink">Yatra<span class="text-indigo-600">Track</span></span>
+          </a>
+          <p class="mt-4 max-w-xs text-sm leading-relaxed text-body">
+            School-bus tracking, attendance aur child-safety alerts — banaya gaya Indian schools ke liye. बच्चों का सफर, Safe &amp; Tracked.
+          </p>
+        </div>
+
+        <!-- contact -->
+        <div>
+          <h3 class="text-sm font-semibold uppercase tracking-wider text-ink">Contact</h3>
+          <ul class="mt-4 space-y-3 text-sm">
+            <li>
+              <a href="https://wa.me/91XXXXXXXXXX?text=Hi%2C%20I'm%20interested%20in%20YatraTrack%20for%20my%20school"
+                 class="inline-flex items-center gap-2 font-medium text-ink transition hover:text-whatsapp">
+                <svg class="h-4 w-4 text-whatsapp" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M.057 24l1.687-6.163a11.867 11.867 0 01-1.587-5.946C.16 5.335 5.495 0 12.05 0a11.82 11.82 0 018.413 3.488 11.82 11.82 0 013.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 01-5.688-1.448L.057 24zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884a9.86 9.86 0 001.516 5.26l-.999 3.648 3.972-.607zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.71.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+                WhatsApp: +91XXXXXXXXXX
+              </a>
+            </li>
+            <li>
+              <a href="mailto:hello@yatratrack.in" class="inline-flex items-center gap-2 font-medium text-ink transition hover:text-indigo-600">
+                <span aria-hidden="true">✉️</span> hello@yatratrack.in
+              </a>
+            </li>
+            <li>
+              <a href="https://yatratrack.in" class="inline-flex items-center gap-2 font-medium text-ink transition hover:text-indigo-600">
+                <span aria-hidden="true">🌐</span> yatratrack.in
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        <!-- links -->
+        <div>
+          <h3 class="text-sm font-semibold uppercase tracking-wider text-ink">Explore</h3>
+          <ul class="mt-4 space-y-3 text-sm">
+            <li><a href="#features" class="font-medium text-body transition hover:text-indigo-600">Features</a></li>
+            <li><a href="#how" class="font-medium text-body transition hover:text-indigo-600">How it works</a></li>
+            <li><a href="#pricing" class="font-medium text-body transition hover:text-indigo-600">Pricing</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="mt-10 flex flex-col items-center justify-between gap-3 border-t border-[#e5e7eb] pt-6 text-sm text-body sm:flex-row">
+        <p>© 2026 YatraTrack. All rights reserved.</p>
+        <p class="inline-flex items-center gap-1.5">Made with <span class="text-red-500" aria-label="love">❤️</span> in India <span aria-hidden="true">🇮🇳</span></p>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

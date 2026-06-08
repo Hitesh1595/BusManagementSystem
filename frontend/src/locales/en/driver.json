@@ -1,0 +1,9 @@
+{
+  "today": {
+    "title": "Today's route",
+    "noTrip": "No trip assigned for today.",
+    "startTrip": "Start trip",
+    "stops": "Stops",
+    "students": "students"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "dashboard": {
+    "title": "Overview",
+    "activeTrips": "Active trips",
+    "openAlerts": "Open alerts",
+    "pendingRequests": "Pending requests"
+  }
+}
