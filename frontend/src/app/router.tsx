@@ -1,15 +1,10 @@
 import { useEffect } from "react";
-import {
-  createBrowserRouter,
-  Navigate,
-  Outlet,
-  RouterProvider,
-} from "react-router-dom";
+import { createBrowserRouter, Outlet, RouterProvider } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { NotFound } from "@/components/common/NotFound";
-import { homeForRole } from "@/components/layout/navConfig";
 import { useAuthStore } from "@/stores/auth";
-import { FullSplash, PublicOnly, RequireRole } from "./guards";
+import { PublicOnly, RequireRole } from "./guards";
+import { LandingPage } from "@/features/marketing/LandingPage";
 import { authRoutes } from "@/features/auth/routes";
 import { parentRoutes } from "@/features/parent/routes";
 import { driverRoutes } from "@/features/driver/routes";
@@ -25,20 +20,11 @@ function RootBoot() {
   return <Outlet />;
 }
 
-/** "/" → role home or login. */
-function RootRedirect() {
-  const status = useAuthStore((s) => s.status);
-  const user = useAuthStore((s) => s.user);
-  if (status === "loading") return <FullSplash />;
-  if (user) return <Navigate to={homeForRole(user.role)} replace />;
-  return <Navigate to="/login" replace />;
-}
-
 const router = createBrowserRouter([
   {
     element: <RootBoot />,
     children: [
-      { path: "/", element: <RootRedirect /> },
+      { path: "/", element: <LandingPage /> },
       { element: <PublicOnly />, children: authRoutes },
       {
         path: "/parent",
