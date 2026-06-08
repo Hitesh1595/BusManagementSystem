@@ -63,8 +63,8 @@ export function RequestsPage() {
 
   // Resolve student names in one shot (a small school's student list fits one page).
   const studentsQuery = useQuery({
-    queryKey: qk.students({ limit: 500 }),
-    queryFn: () => studentsApi.list({ limit: 500 }),
+    queryKey: qk.students({ limit: 100 }),
+    queryFn: () => studentsApi.list({ limit: 100 }),
     staleTime: 60_000,
   });
   const studentMap = useMemo(() => {
@@ -207,8 +207,8 @@ function ReviewDialog({
   });
 
   const routesQuery = useQuery({
-    queryKey: qk.routes({ limit: 200 }),
-    queryFn: () => routesApi.list({ limit: 200 }),
+    queryKey: qk.routes({ limit: 100 }),
+    queryFn: () => routesApi.list({ limit: 100 }),
     enabled: !readOnly,
   });
 

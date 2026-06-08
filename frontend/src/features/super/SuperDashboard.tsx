@@ -1,7 +1,6 @@
 import { Building2 } from "lucide-react";
 import { PageHeader } from "@/components/common/PageHeader";
 import { EmptyState } from "@/components/common/EmptyState";
-import { UserMenu } from "@/components/common/UserMenu";
 
 /**
  * Multi-school super-admin console is a V2 surface (the backend create/list
@@ -11,7 +10,7 @@ import { UserMenu } from "@/components/common/UserMenu";
 export function SuperDashboard() {
   return (
     <div className="space-y-6">
-      <PageHeader title="Platform admin" actions={<UserMenu />} />
+      <PageHeader title="Platform admin" />
       <EmptyState
         icon={Building2}
         title="Multi-school management is coming in V2"

@@ -43,6 +43,10 @@ const admin: NavItem[] = [
   { to: "/admin/settings", labelKey: "nav.settings", icon: Settings },
 ];
 
+const superAdmin: NavItem[] = [
+  { to: "/super", labelKey: "nav.dashboard", icon: LayoutDashboard, end: true },
+];
+
 export function navForRole(role: Role): NavItem[] {
   switch (role) {
     case "parent":
@@ -50,8 +54,9 @@ export function navForRole(role: Role): NavItem[] {
     case "driver":
       return driver;
     case "school_admin":
-    case "super_admin":
       return admin;
+    case "super_admin":
+      return superAdmin;
     default:
       return [];
   }
@@ -65,8 +70,9 @@ export function homeForRole(role: Role): string {
     case "driver":
       return "/driver";
     case "school_admin":
-    case "super_admin":
       return "/admin";
+    case "super_admin":
+      return "/super";
     default:
       return "/login";
   }

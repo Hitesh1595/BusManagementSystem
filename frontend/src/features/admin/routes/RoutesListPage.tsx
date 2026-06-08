@@ -53,8 +53,8 @@ export function RoutesListPage() {
   const [deleting, setDeleting] = useState<Route | null>(null);
 
   const query = useQuery({
-    queryKey: qk.routes({ limit: 200 }),
-    queryFn: () => routesApi.list({ limit: 200 }),
+    queryKey: qk.routes({ limit: 100 }),
+    queryFn: () => routesApi.list({ limit: 100 }),
   });
 
   const vehicleMap = useVehicleMap();
@@ -183,8 +183,8 @@ export function RoutesListPage() {
 
 function useVehicleMap() {
   const q = useQuery({
-    queryKey: qk.vehicles({ limit: 200 }),
-    queryFn: () => vehiclesApi.list({ limit: 200 }),
+    queryKey: qk.vehicles({ limit: 100 }),
+    queryFn: () => vehiclesApi.list({ limit: 100 }),
     staleTime: 60_000,
   });
   return useMemo(() => {
@@ -196,8 +196,8 @@ function useVehicleMap() {
 
 function useDriverMap() {
   const q = useQuery({
-    queryKey: qk.drivers({ limit: 200 }),
-    queryFn: () => driversApi.list({ limit: 200 }),
+    queryKey: qk.drivers({ limit: 100 }),
+    queryFn: () => driversApi.list({ limit: 100 }),
     staleTime: 60_000,
   });
   return useMemo(() => {
@@ -217,12 +217,12 @@ function CreateRouteDialog({ onCreated }: { onCreated: (route: Route) => void })
   const [submitting, setSubmitting] = useState(false);
 
   const vehiclesQuery = useQuery({
-    queryKey: qk.vehicles({ limit: 200 }),
-    queryFn: () => vehiclesApi.list({ limit: 200 }),
+    queryKey: qk.vehicles({ limit: 100 }),
+    queryFn: () => vehiclesApi.list({ limit: 100 }),
   });
   const driversQuery = useQuery({
-    queryKey: qk.drivers({ limit: 200 }),
-    queryFn: () => driversApi.list({ limit: 200 }),
+    queryKey: qk.drivers({ limit: 100 }),
+    queryFn: () => driversApi.list({ limit: 100 }),
   });
 
   const submit = async () => {

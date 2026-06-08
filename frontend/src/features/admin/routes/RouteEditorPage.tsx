@@ -480,12 +480,12 @@ function AssignmentCard({ route, onSaved }: { route: Route; onSaved: () => void 
   }, [route.vehicle_id, route.driver_id, route.schedule_type]);
 
   const vehiclesQuery = useQuery({
-    queryKey: qk.vehicles({ limit: 200 }),
-    queryFn: () => vehiclesApi.list({ limit: 200 }),
+    queryKey: qk.vehicles({ limit: 100 }),
+    queryFn: () => vehiclesApi.list({ limit: 100 }),
   });
   const driversQuery = useQuery({
-    queryKey: qk.drivers({ limit: 200 }),
-    queryFn: () => driversApi.list({ limit: 200 }),
+    queryKey: qk.drivers({ limit: 100 }),
+    queryFn: () => driversApi.list({ limit: 100 }),
   });
 
   const dirty =
