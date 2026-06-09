@@ -9,6 +9,7 @@ import {
   Map,
   Route,
   Settings,
+  UserCog,
   Users,
 } from "lucide-react";
 import type { Role } from "@/lib/api/types";
@@ -26,6 +27,7 @@ const parent: NavItem[] = [
   { to: "/parent", labelKey: "nav.dashboard", icon: LayoutDashboard, end: true },
   { to: "/parent/requests", labelKey: "nav.requests", icon: FileText },
   { to: "/parent/notifications", labelKey: "nav.notifications", icon: Bell },
+  { to: "/parent/settings", labelKey: "nav.settings", icon: Settings },
 ];
 
 const driver: NavItem[] = [
@@ -40,11 +42,13 @@ const admin: NavItem[] = [
   { to: "/admin/routes", labelKey: "nav.routes", icon: Route },
   { to: "/admin/vehicles", labelKey: "nav.vehicles", icon: Bus },
   { to: "/admin/drivers", labelKey: "nav.drivers", icon: Users },
+  { to: "/admin/users", labelKey: "nav.people", icon: UserCog },
   { to: "/admin/settings", labelKey: "nav.settings", icon: Settings },
 ];
 
 const superAdmin: NavItem[] = [
   { to: "/super", labelKey: "nav.dashboard", icon: LayoutDashboard, end: true },
+  { to: "/super/users", labelKey: "nav.people", icon: UserCog },
 ];
 
 export function navForRole(role: Role): NavItem[] {

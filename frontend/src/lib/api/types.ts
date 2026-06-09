@@ -97,6 +97,17 @@ export interface User {
   notification_prefs?: Record<string, unknown>;
 }
 
+/** A user as seen in the admin People screen (list + password reset). */
+export interface ManagedUser {
+  id: string;
+  email: string;
+  full_name: string;
+  role: Role;
+  school_id: string | null;
+  phone: string | null;
+  is_active: boolean;
+}
+
 export interface TokenResponse {
   access_token: string;
   user: User;
@@ -128,6 +139,8 @@ export interface UpdateMePayload {
 export interface SchoolSettings {
   driver_phone_visible?: boolean;
   trip_autogen_enabled?: boolean;
+  /** Distance (metres) from a stop that triggers a `bus_approaching` alert. */
+  bus_approaching_radius_m?: number;
   [key: string]: unknown;
 }
 
@@ -155,6 +168,15 @@ export interface SchoolUpdatePayload {
   logo_url?: string;
   timezone?: string;
   school_location?: LatLng | null;
+}
+
+/** super_admin school creation (POST /schools/). */
+export interface SchoolCreatePayload {
+  name: string;
+  address?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  timezone?: string;
 }
 
 // ---------------------------------------------------------------------------

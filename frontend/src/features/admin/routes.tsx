@@ -5,6 +5,7 @@ import { SetupWizard } from "./SetupWizard";
 import { SettingsPage } from "./SettingsPage";
 import { VehiclesPage } from "./vehicles/VehiclesPage";
 import { DriversPage } from "./drivers/DriversPage";
+import { PeoplePage } from "./people/PeoplePage";
 // Owned by the ADMIN-OPS sibling agent (exact paths + named exports):
 import { FleetMapPage } from "./fleet/FleetMapPage";
 import { AlertsPage } from "./alerts/AlertsPage";
@@ -17,6 +18,7 @@ export const adminRoutes: RouteObject[] = [
   { path: "setup", element: <SetupWizard /> },
   { path: "vehicles", element: <VehiclesPage /> },
   { path: "drivers", element: <DriversPage /> },
+  { path: "users", element: <PeoplePage /> },
   { path: "settings", element: <SettingsPage /> },
   { path: "fleet", element: <FleetMapPage /> },
   { path: "alerts", element: <AlertsPage /> },

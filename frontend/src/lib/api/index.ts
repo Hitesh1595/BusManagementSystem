@@ -5,6 +5,7 @@ export { authApi } from "./auth";
 export { schoolsApi } from "./schools";
 export { vehiclesApi } from "./vehicles";
 export { driversApi } from "./drivers";
+export { usersApi, type UserListParams } from "./users";
 export { routesApi } from "./routes";
 export { studentsApi } from "./students";
 export { transportRequestsApi } from "./transportRequests";

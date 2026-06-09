@@ -20,12 +20,15 @@ export const queryClient = new QueryClient({
 export const qk = {
   me: ["me"] as const,
   school: (id: string) => ["school", id] as const,
+  schools: (params?: unknown) => ["schools", params ?? {}] as const,
 
   vehicles: (params?: unknown) => ["vehicles", params ?? {}] as const,
   vehicle: (id: string) => ["vehicle", id] as const,
 
   drivers: (params?: unknown) => ["drivers", params ?? {}] as const,
   driver: (id: string) => ["driver", id] as const,
+
+  users: (params?: unknown) => ["users", params ?? {}] as const,
 
   routes: (params?: unknown) => ["routes", params ?? {}] as const,
   route: (id: string) => ["route", id] as const,
