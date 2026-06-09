@@ -107,9 +107,15 @@ async def eta_and_approaching(
         eta_s = max(0, round(nearest_dist_m / speed_ms))
 
         # 5. Approaching check -----------------------------------------------
-        # Per-school radius would require a DB hit; use global default (200 m).
-        # A future enhancement can pass school settings as a parameter.
+        # Radius is cached per-school in Redis at trip start (default 200 m),
+        # so the hot path stays DB-free.
         radius_m = 200
+        try:
+            raw_radius = await r.get(f"trip:radius:{trip_id}")
+            if raw_radius is not None:
+                radius_m = int(raw_radius)
+        except (TypeError, ValueError):
+            radius_m = 200
         approaching = None
         if nearest_dist_m <= radius_m:
             approaching = {

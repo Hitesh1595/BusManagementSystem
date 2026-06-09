@@ -552,10 +552,23 @@ async def _populate_trip_redis_cache(db: AsyncSession, trip: Trip) -> None:
         await r.set(f"trip:stops:{trip_id_str}", json.dumps(stops))
         await r.set(f"trip:driver:{trip_id_str}", str(trip.driver_id))
 
+        # Cache the per-school bus-approaching radius so the GPS hot path
+        # (eta.py) never needs a DB hit. Defaults to 200 m, clamped to a sane range.
+        school_settings = (
+            await db.execute(select(School.settings).where(School.id == trip.school_id))
+        ).scalar_one_or_none() or {}
+        try:
+            radius_m = int(school_settings.get("bus_approaching_radius_m", 200))
+        except (TypeError, ValueError):
+            radius_m = 200
+        radius_m = max(50, min(2000, radius_m))
+        await r.set(f"trip:radius:{trip_id_str}", radius_m)
+
         log.info(
             "start_trip.redis_cache_populated",
             trip_id=trip_id_str,
             stops=len(stops),
+            approach_radius_m=radius_m,
         )
     except Exception as exc:
         log.warning(
