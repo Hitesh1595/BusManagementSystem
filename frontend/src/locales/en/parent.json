@@ -8,5 +8,20 @@
     "trackLive": "Track live",
     "route": "Route",
     "stop": "Stop"
+  },
+  "settings": {
+    "title": "Settings",
+    "desc": "Choose which updates you'd like to receive.",
+    "saved": "Preferences updated",
+    "notifTitle": "Notification preferences",
+    "notifDesc": "Turn off the updates you don't need. Critical safety alerts stay on.",
+    "tripUpdatesLabel": "Trip updates",
+    "tripUpdatesHint": "When your child's bus starts and finishes its trip.",
+    "busApproachingLabel": "Bus approaching",
+    "busApproachingHint": "A heads-up when the bus is near your child's stop.",
+    "attendanceLabel": "Boarding & drop-off",
+    "attendanceHint": "When your child boards the bus and is dropped off.",
+    "safetyLabel": "Safety alerts",
+    "safetyHint": "Child-safety alerts are always delivered and can't be turned off."
   }
 }

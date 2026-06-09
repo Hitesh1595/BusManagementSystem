@@ -72,6 +72,68 @@ function SettingToggle({
   );
 }
 
+const RADIUS_MIN = 50;
+const RADIUS_MAX = 1000;
+
+function RadiusSetting({
+  value,
+  disabled,
+  onSave,
+}: {
+  value: number;
+  disabled: boolean;
+  onSave: (meters: number) => void;
+}) {
+  const { t } = useTranslation("admin");
+  const [draft, setDraft] = useState(String(value));
+  useEffect(() => setDraft(String(value)), [value]);
+
+  const n = Number(draft);
+  const valid = Number.isInteger(n) && n >= RADIUS_MIN && n <= RADIUS_MAX;
+  const dirty = valid && n !== value;
+
+  return (
+    <div className="flex items-center justify-between gap-4 rounded-lg border border-border px-4 py-3">
+      <div className="min-w-0">
+        <p className="text-sm font-medium">
+          {t("settings.approachRadiusLabel", "Bus-approaching radius")}
+        </p>
+        <p className="text-xs text-muted-foreground">
+          {t(
+            "settings.approachRadiusHint",
+            "How close the bus must be to a stop to alert parents (50–1000 m).",
+          )}
+        </p>
+      </div>
+      <div className="flex items-center gap-2">
+        <div className="relative">
+          <Input
+            type="number"
+            min={RADIUS_MIN}
+            max={RADIUS_MAX}
+            step={50}
+            value={draft}
+            disabled={disabled}
+            onChange={(e) => setDraft(e.target.value)}
+            className="w-24 pr-7"
+            aria-label={t("settings.approachRadiusLabel", "Bus-approaching radius")}
+          />
+          <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+            m
+          </span>
+        </div>
+        <Button
+          variant="outline"
+          disabled={disabled || !dirty}
+          onClick={() => onSave(n)}
+        >
+          {t("settings.save", "Save")}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export function SettingsPage() {
   const { t } = useTranslation("admin");
   const qc = useQueryClient();
@@ -301,6 +363,17 @@ export function SettingsPage() {
             checked={settings.trip_autogen_enabled === true}
             disabled={settingsMutation.isPending}
             onToggle={(next) => settingsMutation.mutate({ trip_autogen_enabled: next })}
+          />
+          <RadiusSetting
+            value={
+              typeof settings.bus_approaching_radius_m === "number"
+                ? settings.bus_approaching_radius_m
+                : 200
+            }
+            disabled={settingsMutation.isPending}
+            onSave={(meters) =>
+              settingsMutation.mutate({ bus_approaching_radius_m: meters })
+            }
           />
         </CardContent>
       </Card>
