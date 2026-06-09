@@ -14,7 +14,7 @@ from fastapi import Depends, Header
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import decode_access_token
-from app.database import get_db
+from app.database import current_school_id, get_db
 from app.errors import AppError
 
 # ---------------------------------------------------------------------------
@@ -39,9 +39,14 @@ async def get_current_claims(
     if not authorization or not authorization.lower().startswith("bearer "):
         raise AppError("unauthorized", "Missing bearer token", 401)
     try:
-        return decode_access_token(authorization.split(" ", 1)[1])
+        claims = decode_access_token(authorization.split(" ", 1)[1])
     except Exception as exc:
         raise AppError("unauthorized", "Invalid or expired token", 401) from exc
+
+    # Set the RLS tenant scope for this request: the caller's school, or "" for
+    # super_admin (school_id=None) → RLS bypass. System paths never reach here.
+    current_school_id.set(claims.get("school_id") or "")
+    return claims
 
 
 ClaimsDep = Annotated[dict, Depends(get_current_claims)]
