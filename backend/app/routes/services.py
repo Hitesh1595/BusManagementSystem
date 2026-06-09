@@ -358,24 +358,3 @@ async def reorder_stops(
     # Reload stops in new order
     updated_stops = await _load_stops(db, route_id)
     return [_stop_out(s) for s in updated_stops]
-
-
-# ---------------------------------------------------------------------------
-# Students on route — Part D stubs
-# ---------------------------------------------------------------------------
-
-
-async def list_route_students(
-    db: AsyncSession,
-    route_id: uuid.UUID,
-    school_id: uuid.UUID | None,
-    limit: int = 50,
-    offset: int = 0,
-) -> dict:
-    """
-    TODO(part-d): return real student_route_assignments for this route.
-    student_route_assignments table is created in Task 3.4 (Part D).
-    """
-    # Verify route exists and belongs to school (raises 404 otherwise)
-    await get_scoped_or_404(db, Route, route_id, school_id)
-    return {"items": [], "total": 0, "limit": limit, "offset": offset}

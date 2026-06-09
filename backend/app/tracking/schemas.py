@@ -50,7 +50,7 @@ class TripGenerateIn(BaseModel):
 class DriverBrief(BaseModel):
     id: uuid.UUID
     full_name: str
-    phone: str | None  # null for now — conditional disclosure is Chunk 5
+    phone: str | None  # populated only via conditional disclosure in get_trip_detail()
 
     model_config = {"from_attributes": True}
 
