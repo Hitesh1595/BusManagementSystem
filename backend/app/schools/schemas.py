@@ -8,7 +8,9 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from app.core.pagination import Page
 
 # ---------------------------------------------------------------------------
 # Nested sub-schemas
@@ -56,6 +58,23 @@ class SchoolUpdateIn(BaseModel):
     logo_url: str | None = None
     timezone: str | None = None
     school_location: LatLng | None = None  # None = leave unchanged
+
+
+# ---------------------------------------------------------------------------
+# Create school (POST /) — super_admin only
+# ---------------------------------------------------------------------------
+
+
+class SchoolCreateIn(BaseModel):
+    name: str = Field(min_length=1, max_length=200)
+    address: str | None = None
+    phone: str | None = None
+    email: str | None = None
+    timezone: str = "Asia/Kolkata"
+    school_location: LatLng | None = None
+
+
+SchoolPage = Page[SchoolOut]
 
 
 # ---------------------------------------------------------------------------

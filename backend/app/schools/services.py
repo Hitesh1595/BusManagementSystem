@@ -10,13 +10,14 @@ import uuid
 from datetime import UTC, datetime
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.geo import from_point, to_point
+from app.core.pagination import paginate
 from app.errors import AppError
 from app.schools.models import School
-from app.schools.schemas import SchoolOut, SchoolUpdateIn
+from app.schools.schemas import SchoolCreateIn, SchoolOut, SchoolPage, SchoolUpdateIn
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -61,6 +62,49 @@ def _school_to_out(school: School) -> SchoolOut:
 # ---------------------------------------------------------------------------
 # Service functions
 # ---------------------------------------------------------------------------
+
+
+async def create_school(db: AsyncSession, payload: SchoolCreateIn) -> SchoolOut:
+    """Create a school with an auto-generated join code (super_admin only)."""
+    school = School(
+        name=payload.name,
+        address=payload.address,
+        phone=payload.phone,
+        email=payload.email,
+        timezone=payload.timezone,
+        join_code=await _ensure_unique_join_code(db),
+        school_location=(
+            to_point(payload.school_location.lat, payload.school_location.lng)
+            if payload.school_location
+            else None
+        ),
+    )
+    db.add(school)
+    await db.commit()
+    await db.refresh(school)
+    return _school_to_out(school)
+
+
+async def list_schools(
+    db: AsyncSession,
+    *,
+    q: str | None = None,
+    limit: int = 50,
+    offset: int = 0,
+) -> SchoolPage:
+    """List all schools (super_admin only), optionally filtered by name."""
+    stmt = select(School)
+    if q:
+        stmt = stmt.where(func.lower(School.name).like(f"%{q.lower()}%"))
+    stmt = stmt.order_by(School.name.asc())
+
+    result = await paginate(stmt, db, limit=limit, offset=offset)
+    return SchoolPage(
+        items=[_school_to_out(s) for s in result["items"]],
+        total=result["total"],
+        limit=result["limit"],
+        offset=result["offset"],
+    )
 
 
 async def get_school(

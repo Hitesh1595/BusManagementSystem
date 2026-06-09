@@ -16,10 +16,9 @@ from __future__ import annotations
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 
 from app.deps import DbDep, SchoolScopeDep, require_role
-from app.errors import AppError
 from app.schools import schemas, services
 
 router = APIRouter(prefix="/api/v1/schools", tags=["schools"])
@@ -93,17 +92,27 @@ async def regenerate_join_code(
 
 
 # ---------------------------------------------------------------------------
-# POST / and GET / — V2 (super_admin only stubs)
+# POST / and GET / — super_admin only (cross-school console)
 # ---------------------------------------------------------------------------
 
 _SuperOnly = Annotated[dict, Depends(require_role("super_admin"))]
 
 
-@router.post("/", status_code=501)
-async def create_school(claims: _SuperOnly) -> dict:
-    raise AppError("not_implemented", "School creation via API is a V2 feature", 501)
+@router.post("/", status_code=201)
+async def create_school(
+    body: schemas.SchoolCreateIn,
+    db: DbDep,
+    claims: _SuperOnly,
+) -> schemas.SchoolOut:
+    return await services.create_school(db, body)
 
 
-@router.get("/", status_code=501)
-async def list_schools(claims: _SuperOnly) -> dict:
-    raise AppError("not_implemented", "School listing via API is a V2 feature", 501)
+@router.get("/")
+async def list_schools(
+    db: DbDep,
+    claims: _SuperOnly,
+    q: Annotated[str | None, Query(description="Filter by name")] = None,
+    limit: Annotated[int, Query(le=100, ge=1)] = 50,
+    offset: Annotated[int, Query(ge=0)] = 0,
+) -> schemas.SchoolPage:
+    return await services.list_schools(db, q=q, limit=limit, offset=offset)
