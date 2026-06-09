@@ -13,6 +13,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query, status
 
 from app.deps import ClaimsDep, DbDep, SchoolScopeDep, require_role
+from app.tracking.schemas import TripPage
 from app.vehicles import services
 from app.vehicles.schemas import (
     AssignVehicleIn,
@@ -177,9 +178,10 @@ async def get_driver_schedule(
     db: DbDep,
     claims: ClaimsDep,
     school_id: SchoolScopeDep,
-) -> dict:
-    # TODO(chunk-4): return real schedule from trips table
-    return {"items": [], "total": 0, "limit": 50, "offset": 0}
+    limit: Annotated[int, Query(le=100, ge=1)] = 50,
+    offset: Annotated[int, Query(ge=0)] = 0,
+) -> TripPage:
+    return await services.list_driver_schedule(db, driver_id, school_id, limit=limit, offset=offset)
 
 
 @drivers_router.get("/{driver_id}/trips")
@@ -188,6 +190,7 @@ async def get_driver_trips(
     db: DbDep,
     claims: ClaimsDep,
     school_id: SchoolScopeDep,
-) -> dict:
-    # TODO(chunk-4): return real trips from trips table
-    return {"items": [], "total": 0, "limit": 50, "offset": 0}
+    limit: Annotated[int, Query(le=100, ge=1)] = 50,
+    offset: Annotated[int, Query(ge=0)] = 0,
+) -> TripPage:
+    return await services.list_driver_trips(db, driver_id, school_id, limit=limit, offset=offset)

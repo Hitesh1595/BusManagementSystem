@@ -35,20 +35,26 @@ from app.vehicles.schemas import (
 )
 
 # ---------------------------------------------------------------------------
-# Lazy import guard for trips (Chunk 4)
+# Trip guards / helpers
 # ---------------------------------------------------------------------------
 
-def _has_active_trip(vehicle_id: uuid.UUID) -> bool:
-    """
-    Stub guard — always returns False until Chunk 4 adds the trips table.
-    TODO(chunk-4): block delete when active trip exists.
-    """
-    try:
-        from app.trips.models import Trip  # noqa: F401  # type: ignore[import]
-        # If import succeeds, check will be wired here in Chunk 4.
-    except ImportError:
-        pass
-    return False
+# A vehicle with a trip in one of these states must not be deleted.
+_BLOCKING_TRIP_STATUSES = ("scheduled", "in_progress", "pending_safeguard_check")
+
+
+async def _has_active_trip(db: AsyncSession, vehicle_id: uuid.UUID) -> bool:
+    """True if the vehicle has an upcoming or in-flight trip (blocks delete)."""
+    from app.tracking.models import Trip
+
+    stmt = (
+        select(Trip.id)
+        .where(
+            Trip.vehicle_id == vehicle_id,
+            Trip.status.in_(_BLOCKING_TRIP_STATUSES),
+        )
+        .limit(1)
+    )
+    return (await db.execute(stmt)).first() is not None
 
 
 # ---------------------------------------------------------------------------
@@ -171,8 +177,7 @@ async def soft_delete_vehicle(
     if vehicle is None:
         raise AppError("not_found", "Vehicle not found", 404)
 
-    # TODO(chunk-4): block delete when active trip exists
-    if _has_active_trip(vehicle_id):
+    if await _has_active_trip(db, vehicle_id):
         raise AppError("conflict", "Vehicle has an active or scheduled trip", 409)
 
     vehicle.is_active = False
@@ -329,3 +334,64 @@ async def assign_vehicle(
         new={"vehicle_id": str(payload.vehicle_id), "plate_number": vehicle.plate_number},
     )
     await db.commit()
+
+
+# Trips that count as a driver's upcoming/active schedule.
+_SCHEDULE_TRIP_STATUSES = ("scheduled", "in_progress", "pending_safeguard_check")
+
+
+async def list_driver_schedule(
+    db: AsyncSession,
+    driver_id: uuid.UUID,
+    school_id: uuid.UUID | None,
+    limit: int = 50,
+    offset: int = 0,
+):
+    """Upcoming / in-flight trips assigned to a driver, soonest first."""
+    from app.tracking.models import Trip
+    from app.tracking.schemas import TripOut, TripPage
+
+    await get_driver(db, driver_id, school_id)  # 404 if driver not in this school
+
+    stmt = select(Trip).where(
+        Trip.driver_id == driver_id,
+        Trip.status.in_(_SCHEDULE_TRIP_STATUSES),
+    )
+    if school_id is not None:
+        stmt = stmt.where(Trip.school_id == school_id)
+    stmt = stmt.order_by(Trip.scheduled_departure_at.asc())
+
+    result = await paginate(stmt, db, limit=limit, offset=offset)
+    return TripPage(
+        items=[TripOut.model_validate(t) for t in result["items"]],
+        total=result["total"],
+        limit=result["limit"],
+        offset=result["offset"],
+    )
+
+
+async def list_driver_trips(
+    db: AsyncSession,
+    driver_id: uuid.UUID,
+    school_id: uuid.UUID | None,
+    limit: int = 50,
+    offset: int = 0,
+):
+    """Full trip history for a driver, most recent first."""
+    from app.tracking.models import Trip
+    from app.tracking.schemas import TripOut, TripPage
+
+    await get_driver(db, driver_id, school_id)  # 404 if driver not in this school
+
+    stmt = select(Trip).where(Trip.driver_id == driver_id)
+    if school_id is not None:
+        stmt = stmt.where(Trip.school_id == school_id)
+    stmt = stmt.order_by(Trip.scheduled_departure_at.desc())
+
+    result = await paginate(stmt, db, limit=limit, offset=offset)
+    return TripPage(
+        items=[TripOut.model_validate(t) for t in result["items"]],
+        total=result["total"],
+        limit=result["limit"],
+        offset=result["offset"],
+    )
