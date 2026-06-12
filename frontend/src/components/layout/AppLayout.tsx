@@ -44,7 +44,10 @@ export function AppLayout() {
           </SheetContent>
         </Sheet>
         <Wordmark />
-        <NotificationBell />
+        <div className="flex items-center gap-1">
+          <NotificationBell />
+          <UserMenu />
+        </div>
       </header>
 
       <ConnectionBanner />
