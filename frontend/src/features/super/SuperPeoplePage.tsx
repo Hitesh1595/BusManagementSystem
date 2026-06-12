@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { KeyRound, Search, UserCog } from "lucide-react";
+import { Search, UserCog, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/common/PageHeader";
+import { AddStaffDialog, StaffRowMenu } from "@/components/common/StaffControls";
 import { EmptyState } from "@/components/common/EmptyState";
 import { CardListSkeleton, ErrorState } from "@/components/common/States";
 import { Field } from "@/components/common/Field";
@@ -48,6 +49,7 @@ export function SuperPeoplePage() {
   const [q, setQ] = useState("");
   const [role, setRole] = useState<RoleFilter>("all");
   const [school, setSchool] = useState<string>("all");
+  const [adding, setAdding] = useState(false);
 
   useEffect(() => {
     const id = setTimeout(() => setQ(search.trim()), 300);
@@ -107,7 +109,13 @@ export function SuperPeoplePage() {
     <div className="space-y-6">
       <PageHeader
         title="People"
-        description="Search users across every school and reset a password if someone is locked out."
+        description="Search users across every school. Provision a school's admin, add staff, or manage accounts."
+        actions={
+          <Button onClick={() => setAdding(true)}>
+            <UserPlus className="size-4" />
+            Add staff
+          </Button>
+        }
       />
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -193,19 +201,15 @@ export function SuperPeoplePage() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
+                      <StaffRowMenu
+                        user={u}
+                        onReset={(usr) => {
                           setPw("");
                           setConfirm("");
                           setTouched(false);
-                          setResetting(u);
+                          setResetting(usr);
                         }}
-                      >
-                        <KeyRound className="size-4" />
-                        Reset password
-                      </Button>
+                      />
                     </TableCell>
                   </TableRow>
                 ))}
@@ -214,6 +218,15 @@ export function SuperPeoplePage() {
           </CardContent>
         </Card>
       )}
+
+      <AddStaffDialog
+        open={adding}
+        onOpenChange={setAdding}
+        schools={(schoolsQuery.data?.items ?? []).map((s) => ({
+          id: s.id,
+          name: s.name,
+        }))}
+      />
 
       {/* Reset password */}
       <Dialog

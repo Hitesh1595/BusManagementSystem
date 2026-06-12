@@ -14,7 +14,15 @@ from fastapi import APIRouter, Depends, Query
 
 from app.deps import ClaimsDep, DbDep, SchoolScopeDep, require_role
 from app.users import services
-from app.users.schemas import ResetPasswordIn, ResetPasswordOut, UserPage
+from app.users.schemas import (
+    ResetPasswordIn,
+    ResetPasswordOut,
+    StaffCreateIn,
+    StaffCreateOut,
+    UserOut,
+    UserPage,
+    UserUpdateIn,
+)
 
 router = APIRouter(
     prefix="/api/v1/users",
@@ -43,6 +51,73 @@ async def list_users(
         school_filter=school,
         limit=limit,
         offset=offset,
+    )
+
+
+@router.post("/", status_code=201)
+async def create_user(
+    body: StaffCreateIn,
+    db: DbDep,
+    claims: ClaimsDep,
+    school_id: SchoolScopeDep,
+) -> StaffCreateOut:
+    return await services.create_staff_user(
+        db,
+        requester_id=UUID(claims["sub"]),
+        requester_role=claims["role"],
+        school_scope=school_id,
+        payload=body,
+    )
+
+
+@router.patch("/{user_id}")
+async def update_user(
+    user_id: UUID,
+    body: UserUpdateIn,
+    db: DbDep,
+    claims: ClaimsDep,
+    school_id: SchoolScopeDep,
+) -> UserOut:
+    return await services.update_user(
+        db,
+        target_id=user_id,
+        payload=body,
+        requester_role=claims["role"],
+        school_scope=school_id,
+    )
+
+
+@router.post("/{user_id}/deactivate")
+async def deactivate_user(
+    user_id: UUID,
+    db: DbDep,
+    claims: ClaimsDep,
+    school_id: SchoolScopeDep,
+) -> UserOut:
+    return await services.set_user_active(
+        db,
+        target_id=user_id,
+        active=False,
+        requester_id=UUID(claims["sub"]),
+        requester_role=claims["role"],
+        school_scope=school_id,
+    )
+
+
+@router.post("/{user_id}/activate")
+async def activate_user(
+    user_id: UUID,
+    db: DbDep,
+    claims: ClaimsDep,
+    school_id: SchoolScopeDep,
+) -> UserOut:
+    return await services.set_user_active(
+        db,
+        target_id=user_id,
+        active=True,
+        requester_id=UUID(claims["sub"]),
+        requester_role=claims["role"],
+        school_scope=school_id,
     )
 
 

@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { KeyRound, Search, UserCog } from "lucide-react";
+import { Search, UserCog, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/common/PageHeader";
+import { AddStaffDialog, StaffRowMenu } from "@/components/common/StaffControls";
 import { EmptyState } from "@/components/common/EmptyState";
 import { CardListSkeleton, ErrorState } from "@/components/common/States";
 import { Field } from "@/components/common/Field";
@@ -42,7 +43,7 @@ import { usersApi } from "@/lib/api";
 import type { ManagedUser } from "@/lib/api/types";
 import { qk } from "@/lib/query";
 
-type RoleFilter = "all" | "driver" | "parent";
+type RoleFilter = "all" | "school_admin" | "driver" | "parent";
 
 export function PeoplePage() {
   const { t } = useTranslation("admin");
@@ -50,6 +51,7 @@ export function PeoplePage() {
   const [search, setSearch] = useState("");
   const [q, setQ] = useState("");
   const [role, setRole] = useState<RoleFilter>("all");
+  const [adding, setAdding] = useState(false);
 
   // Debounce the search box into the query param.
   useEffect(() => {
@@ -103,8 +105,14 @@ export function PeoplePage() {
         title={t("people.title", "People")}
         description={t(
           "people.desc",
-          "Drivers and parents in your school. Reset a password if someone is locked out.",
+          "Admins, drivers, and parents in your school. Add staff, edit, or deactivate accounts.",
         )}
+        actions={
+          <Button onClick={() => setAdding(true)}>
+            <UserPlus className="size-4" />
+            {t("people.add", "Add staff")}
+          </Button>
+        }
       />
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -123,6 +131,7 @@ export function PeoplePage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{t("people.allRoles", "All people")}</SelectItem>
+            <SelectItem value="school_admin">{t("people.admins", "Admins")}</SelectItem>
             <SelectItem value="driver">{t("people.drivers", "Drivers")}</SelectItem>
             <SelectItem value="parent">{t("people.parents", "Parents")}</SelectItem>
           </SelectContent>
@@ -179,19 +188,15 @@ export function PeoplePage() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
+                      <StaffRowMenu
+                        user={u}
+                        onReset={(usr) => {
                           setPw("");
                           setConfirm("");
                           setTouched(false);
-                          setResetting(u);
+                          setResetting(usr);
                         }}
-                      >
-                        <KeyRound className="size-4" />
-                        {t("people.reset", "Reset password")}
-                      </Button>
+                      />
                     </TableCell>
                   </TableRow>
                 ))}
@@ -200,6 +205,8 @@ export function PeoplePage() {
           </CardContent>
         </Card>
       )}
+
+      <AddStaffDialog open={adding} onOpenChange={setAdding} />
 
       {/* Reset password */}
       <Dialog

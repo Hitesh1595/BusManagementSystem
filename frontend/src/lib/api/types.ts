@@ -108,6 +108,26 @@ export interface ManagedUser {
   is_active: boolean;
 }
 
+/** Create a staff account (driver or school_admin). Parents self-register. */
+export interface StaffCreatePayload {
+  role: "driver" | "school_admin";
+  email: string;
+  full_name: string;
+  phone?: string | null;
+  /** super_admin only: which school to create the account in. */
+  school_id?: string | null;
+}
+
+export interface StaffCreateResult {
+  user: ManagedUser;
+  temp_password: string;
+}
+
+export interface UserUpdatePayload {
+  full_name?: string;
+  phone?: string | null;
+}
+
 export interface TokenResponse {
   access_token: string;
   user: User;

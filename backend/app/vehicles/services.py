@@ -6,7 +6,6 @@ All write operations go through these functions; routers stay thin.
 
 from __future__ import annotations
 
-import secrets
 import uuid
 from datetime import UTC, datetime
 
@@ -17,7 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.audit.models import write_audit
 from app.core.email import send_email
 from app.core.pagination import paginate
-from app.core.security import hash_password
+from app.core.security import hash_password, temp_password
 from app.crud import get_scoped_or_404, scoped_select
 from app.errors import AppError
 from app.vehicles.models import Vehicle
@@ -68,11 +67,6 @@ def _vehicle_out(v: Vehicle) -> VehicleOut:
 
 def _driver_out(u) -> DriverOut:
     return DriverOut.model_validate(u)
-
-
-def _temp_password() -> str:
-    """Generate a human-readable temp password: 12 random URL-safe chars."""
-    return secrets.token_urlsafe(9)  # 12 base64url chars
 
 
 # ---------------------------------------------------------------------------
@@ -210,7 +204,7 @@ async def create_driver(
     if existing is not None:
         raise AppError("conflict", "Email already registered for this school", 409)
 
-    temp_pw = _temp_password()
+    temp_pw = temp_password()
     driver = User(
         school_id=school_id,
         email=payload.email.lower(),

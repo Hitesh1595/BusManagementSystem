@@ -24,6 +24,11 @@ def new_refresh_token() -> str:
     return secrets.token_urlsafe(32)
 
 
+def temp_password() -> str:
+    """Generate a human-readable temporary password: 12 random URL-safe chars."""
+    return secrets.token_urlsafe(9)  # 12 base64url chars
+
+
 def hash_token(raw: str) -> str:
     return hashlib.sha256(raw.encode()).hexdigest()
 
