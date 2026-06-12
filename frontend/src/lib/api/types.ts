@@ -128,6 +128,41 @@ export interface UserUpdatePayload {
   phone?: string | null;
 }
 
+// ---------------------------------------------------------------------------
+// Super-admin console (platform analytics + per-school drill-down)
+// ---------------------------------------------------------------------------
+
+export interface AlertSeverityBreakdown {
+  critical: number;
+  high: number;
+  medium: number;
+  low: number;
+}
+
+export interface PlatformAnalytics {
+  total_schools: number;
+  active_schools: number;
+  users_by_role: { school_admin: number; driver: number; parent: number };
+  active_vehicles: number;
+  active_routes: number;
+  active_students: number;
+  active_trips: number;
+  open_alerts: number;
+  alerts_last_24h: number;
+  alert_severity: AlertSeverityBreakdown;
+}
+
+export interface SchoolOverview {
+  school: School;
+  vehicle_count: number;
+  driver_count: number;
+  route_count: number;
+  student_count: number;
+  active_trip_count: number;
+  open_alert_count: number;
+  alert_severity: AlertSeverityBreakdown;
+}
+
 export interface TokenResponse {
   access_token: string;
   user: User;

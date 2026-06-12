@@ -1,11 +1,23 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Building2, Check, Copy, Plus } from "lucide-react";
+import {
+  AlertTriangle,
+  Building2,
+  Bus,
+  Check,
+  Copy,
+  GraduationCap,
+  Navigation,
+  Plus,
+  Users,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/common/PageHeader";
 import { EmptyState } from "@/components/common/EmptyState";
 import { CardListSkeleton, ErrorState } from "@/components/common/States";
+import { StatCard } from "@/components/common/StatCard";
 import { Field } from "@/components/common/Field";
 import { Button } from "@/components/ui/button";
 import {
@@ -33,7 +45,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { schoolsApi } from "@/lib/api";
+import { schoolsApi, superAdminApi } from "@/lib/api";
 import { getErrorMessage } from "@/lib/api/client";
 import type { School } from "@/lib/api/types";
 import { qk } from "@/lib/query";
@@ -61,24 +73,19 @@ function CopyButton({ value }: { value: string }) {
   );
 }
 
-function StatCard({ label, value }: { label: string; value: number }) {
-  return (
-    <Card>
-      <CardContent className="p-5">
-        <p className="text-sm text-muted-foreground">{label}</p>
-        <p className="mt-1 text-3xl font-bold">{value}</p>
-      </CardContent>
-    </Card>
-  );
-}
-
 export function SuperDashboard() {
   const qc = useQueryClient();
+  const navigate = useNavigate();
 
   const params = { limit: 100 };
   const list = useQuery({
     queryKey: qk.schools(params),
     queryFn: () => schoolsApi.list(params),
+  });
+
+  const analytics = useQuery({
+    queryKey: ["superPlatform"],
+    queryFn: () => superAdminApi.platformAnalytics(),
   });
 
   const [addOpen, setAddOpen] = useState(false);
@@ -119,8 +126,8 @@ export function SuperDashboard() {
   };
 
   const items = list.data?.items ?? [];
-  const total = list.data?.total ?? 0;
-  const activeCount = items.filter((s) => s.is_active).length;
+  const a = analytics.data;
+  const aLoading = analytics.isLoading;
 
   return (
     <div className="space-y-6">
@@ -153,9 +160,19 @@ export function SuperDashboard() {
         />
       ) : (
         <>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <StatCard label="Schools" value={total} />
-            <StatCard label="Active" value={activeCount} />
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <StatCard icon={Building2} label="Schools" value={a?.total_schools} loading={aLoading} />
+            <StatCard icon={Navigation} label="Active trips" value={a?.active_trips} loading={aLoading} />
+            <StatCard
+              icon={AlertTriangle}
+              label="Open alerts"
+              value={a?.open_alerts}
+              loading={aLoading}
+              accent="destructive"
+            />
+            <StatCard icon={Users} label="Admins" value={a?.users_by_role.school_admin} loading={aLoading} />
+            <StatCard icon={Bus} label="Drivers" value={a?.users_by_role.driver} loading={aLoading} />
+            <StatCard icon={GraduationCap} label="Parents" value={a?.users_by_role.parent} loading={aLoading} />
           </div>
 
           <Card>
@@ -174,9 +191,13 @@ export function SuperDashboard() {
                 </TableHeader>
                 <TableBody>
                   {items.map((s) => (
-                    <TableRow key={s.id}>
+                    <TableRow
+                      key={s.id}
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => navigate(`/super/schools/${s.id}`)}
+                    >
                       <TableCell className="font-medium">{s.name}</TableCell>
-                      <TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
                         <span className="flex items-center gap-1">
                           <code className="font-mono text-sm tracking-wider">
                             {s.join_code}

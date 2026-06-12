@@ -21,6 +21,7 @@ from app.redis_client import redis_ok
 from app.routes.router import router as routes_router
 from app.schools import router as schools_router
 from app.students.router import students_router, transport_router
+from app.super_admin.router import router as super_admin_router
 from app.tracking.router import router as trips_router
 from app.users.router import router as users_router
 from app.vehicles.router import drivers_router, vehicles_router
@@ -156,6 +157,7 @@ app.include_router(transport_router)
 app.include_router(trips_router)
 app.include_router(alerts_router)
 app.include_router(notifications_router)
+app.include_router(super_admin_router)
 
 # Mount Socket.IO last so REST routes win path matching.
 app.mount("/socket.io", sio_app)

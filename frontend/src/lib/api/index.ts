@@ -12,4 +12,5 @@ export { transportRequestsApi } from "./transportRequests";
 export { tripsApi, type TripListParams } from "./trips";
 export { alertsApi, type AlertListParams } from "./alerts";
 export { notificationsApi, type NotificationListParams } from "./notifications";
+export { superAdminApi } from "./superAdmin";
 export type { PageParams } from "./_params";
