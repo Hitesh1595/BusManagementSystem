@@ -7,6 +7,8 @@ import {
   Inbox,
   LayoutDashboard,
   Map,
+  MessageSquare,
+  Megaphone,
   Route,
   Settings,
   UserCog,
@@ -43,6 +45,8 @@ const admin: NavItem[] = [
   { to: "/admin/vehicles", labelKey: "nav.vehicles", icon: Bus },
   { to: "/admin/drivers", labelKey: "nav.drivers", icon: Users },
   { to: "/admin/users", labelKey: "nav.people", icon: UserCog },
+  { to: "/admin/feedback", labelKey: "nav.feedback", icon: MessageSquare },
+  { to: "/admin/complaints", labelKey: "nav.complaints", icon: Megaphone },
   { to: "/admin/settings", labelKey: "nav.settings", icon: Settings },
 ];
 

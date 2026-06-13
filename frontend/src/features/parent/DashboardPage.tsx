@@ -1,9 +1,12 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
-import { Users } from "lucide-react";
+import { Megaphone, Users } from "lucide-react";
 import { PageHeader } from "@/components/common/PageHeader";
 import { EmptyState } from "@/components/common/EmptyState";
 import { ErrorState, CardListSkeleton } from "@/components/common/States";
+import { ComplaintDialog } from "@/components/common/ComplaintDialog";
+import { Button } from "@/components/ui/button";
 import { studentsApi } from "@/lib/api/students";
 import { transportRequestsApi } from "@/lib/api/transportRequests";
 import { qk } from "@/lib/query";
@@ -13,6 +16,7 @@ import { ChildTripCard } from "./components/ChildTripCard";
 /** Parent home: children list, today's trip per child, add-child. */
 export function DashboardPage() {
   const { t } = useTranslation("parent");
+  const [reportOpen, setReportOpen] = useState(false);
 
   const studentsQuery = useQuery({
     queryKey: qk.students({ scope: "mine" }),
@@ -36,8 +40,18 @@ export function DashboardPage() {
           "dashboard.subtitle",
           "Track today's bus and manage your children's transport.",
         )}
-        actions={<AddChildDialog />}
+        actions={
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => setReportOpen(true)}>
+              <Megaphone className="size-4" />
+              {t("dashboard.reportIssue", "Report an issue")}
+            </Button>
+            <AddChildDialog />
+          </div>
+        }
       />
+
+      <ComplaintDialog open={reportOpen} onOpenChange={setReportOpen} />
 
       {studentsQuery.isLoading ? (
         <CardListSkeleton rows={2} />

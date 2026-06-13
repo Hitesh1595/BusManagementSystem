@@ -12,6 +12,8 @@ import { AlertsPage } from "./alerts/AlertsPage";
 import { RequestsPage } from "./requests/RequestsPage";
 import { RoutesListPage } from "./routes/RoutesListPage";
 import { RouteEditorPage } from "./routes/RouteEditorPage";
+import { FeedbackPage } from "./feedback/FeedbackPage";
+import { ComplaintsPage } from "./complaints/ComplaintsPage";
 
 export const adminRoutes: RouteObject[] = [
   { index: true, element: <AdminDashboard /> },
@@ -25,4 +27,6 @@ export const adminRoutes: RouteObject[] = [
   { path: "requests", element: <RequestsPage /> },
   { path: "routes", element: <RoutesListPage /> },
   { path: "routes/:routeId", element: <RouteEditorPage /> },
+  { path: "feedback", element: <FeedbackPage /> },
+  { path: "complaints", element: <ComplaintsPage /> },
 ];

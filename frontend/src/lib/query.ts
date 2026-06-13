@@ -50,4 +50,8 @@ export const qk = {
 
   alerts: (params?: unknown) => ["alerts", params ?? {}] as const,
   notifications: (params?: unknown) => ["notifications", params ?? {}] as const,
+
+  feedback: (params?: unknown) => ["feedback", params ?? {}] as const,
+  driverRating: ["driver-rating"] as const,
+  complaints: (params?: unknown) => ["complaints", params ?? {}] as const,
 };

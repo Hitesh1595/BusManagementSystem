@@ -163,6 +163,67 @@ export interface SchoolOverview {
   alert_severity: AlertSeverityBreakdown;
 }
 
+// ---------------------------------------------------------------------------
+// Feedback + complaints
+// ---------------------------------------------------------------------------
+
+export type ComplaintAgainst = "driver" | "route" | "vehicle" | "general";
+export type ComplaintStatus = "open" | "in_review" | "resolved" | "closed";
+export type ComplaintPriority = "low" | "medium" | "high" | "urgent";
+
+export interface TripFeedback {
+  id: string;
+  trip_id: string;
+  parent_id: string;
+  driver_id: string;
+  rating: number;
+  comment: string | null;
+  is_flagged: boolean;
+  admin_reviewed: boolean;
+  admin_notes: string | null;
+  created_at: string;
+}
+
+export interface FeedbackCreatePayload {
+  rating: number;
+  comment?: string | null;
+}
+
+export interface FeedbackReviewPayload {
+  admin_notes?: string | null;
+  is_flagged?: boolean;
+}
+
+export interface DriverRating {
+  average: number | null;
+  count: number;
+}
+
+export interface Complaint {
+  id: string;
+  submitted_by: string;
+  against_type: ComplaintAgainst;
+  against_id: string | null;
+  trip_id: string | null;
+  subject: string;
+  description: string;
+  status: ComplaintStatus;
+  priority: ComplaintPriority;
+  assigned_to: string | null;
+  resolution_notes: string | null;
+  resolved_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ComplaintCreatePayload {
+  against_type: ComplaintAgainst;
+  against_id?: string | null;
+  trip_id?: string | null;
+  subject: string;
+  description: string;
+}
+
 export interface TokenResponse {
   access_token: string;
   user: User;

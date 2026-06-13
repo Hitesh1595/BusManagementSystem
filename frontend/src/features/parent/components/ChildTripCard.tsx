@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Bus, GraduationCap, MapPin, Navigation } from "lucide-react";
+import { Bus, GraduationCap, MapPin, Navigation, Star } from "lucide-react";
 import { toast } from "sonner";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
+import { RateTripDialog } from "./RateTripDialog";
 import {
   Card,
   CardContent,
@@ -49,11 +51,15 @@ export function ChildTripCard({ student, assignedRequests }: ChildTripCardProps)
     enabled: !!routeId,
   });
 
-  // Prefer an in_progress trip, else a scheduled one.
+  const [rateOpen, setRateOpen] = useState(false);
+  const [rated, setRated] = useState(false);
+
+  // Prefer an in_progress trip, else scheduled, else a completed one (to rate).
   const trips = tripsQuery.data?.items ?? [];
   const trip: Trip | undefined =
     trips.find((tr) => tr.status === "in_progress") ??
-    trips.find((tr) => tr.status === "scheduled");
+    trips.find((tr) => tr.status === "scheduled") ??
+    trips.find((tr) => tr.status === "completed");
 
   const markAbsent = useMutation({
     mutationFn: (absent: boolean) =>
@@ -157,49 +163,76 @@ export function ChildTripCard({ student, assignedRequests }: ChildTripCardProps)
               </span>
             </div>
 
-            <Button
-              asChild={!!canTrack}
-              size="lg"
-              className="w-full"
-              disabled={!canTrack}
-              variant={trip.status === "in_progress" ? "default" : "secondary"}
-            >
-              {canTrack ? (
-                <Link to={`/parent/track/${trip.id}`}>
-                  <Navigation className="size-4" />
-                  {trip.status === "in_progress"
-                    ? t("trip.trackLive", "Track live")
-                    : t("trip.viewTracking", "View tracking")}
-                </Link>
+            {trip.status === "completed" ? (
+              rated ? (
+                <p className="rounded-lg bg-muted/40 px-3 py-2 text-center text-sm text-muted-foreground">
+                  {t("trip.rateThanks", "Thanks for rating this trip.")}
+                </p>
               ) : (
-                <span>{t("trip.trackUnavailable", "Tracking unavailable")}</span>
-              )}
-            </Button>
+                <Button
+                  variant="secondary"
+                  className="w-full"
+                  onClick={() => setRateOpen(true)}
+                >
+                  <Star className="size-4" />
+                  {t("trip.rate", "Rate this trip")}
+                </Button>
+              )
+            ) : (
+              <>
+                <Button
+                  asChild={!!canTrack}
+                  size="lg"
+                  className="w-full"
+                  disabled={!canTrack}
+                  variant={trip.status === "in_progress" ? "default" : "secondary"}
+                >
+                  {canTrack ? (
+                    <Link to={`/parent/track/${trip.id}`}>
+                      <Navigation className="size-4" />
+                      {trip.status === "in_progress"
+                        ? t("trip.trackLive", "Track live")
+                        : t("trip.viewTracking", "View tracking")}
+                    </Link>
+                  ) : (
+                    <span>{t("trip.trackUnavailable", "Tracking unavailable")}</span>
+                  )}
+                </Button>
 
-            {trip.status === "scheduled" ? (
-              <div className="flex items-center justify-between rounded-lg bg-muted/40 px-3 py-2">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium">
-                    {t("trip.absentToggle", "Mark absent today")}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {t("trip.absentHint", "Tell the driver your child won't board today.")}
-                  </p>
-                </div>
-                {markAbsent.isPending || absenceQuery.isLoading ? (
-                  <Spinner className="size-4" />
-                ) : (
-                  <Switch
-                    checked={isAbsent}
-                    onCheckedChange={(v) => markAbsent.mutate(v)}
-                    aria-label={t("trip.absentToggle", "Mark absent today")}
-                  />
-                )}
-              </div>
-            ) : null}
+                {trip.status === "scheduled" ? (
+                  <div className="flex items-center justify-between rounded-lg bg-muted/40 px-3 py-2">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium">
+                        {t("trip.absentToggle", "Mark absent today")}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {t("trip.absentHint", "Tell the driver your child won't board today.")}
+                      </p>
+                    </div>
+                    {markAbsent.isPending || absenceQuery.isLoading ? (
+                      <Spinner className="size-4" />
+                    ) : (
+                      <Switch
+                        checked={isAbsent}
+                        onCheckedChange={(v) => markAbsent.mutate(v)}
+                        aria-label={t("trip.absentToggle", "Mark absent today")}
+                      />
+                    )}
+                  </div>
+                ) : null}
+              </>
+            )}
           </div>
         )}
       </CardContent>
+      {trip ? (
+        <RateTripDialog
+          open={rateOpen}
+          onOpenChange={setRateOpen}
+          tripId={trip.id}
+          onRated={() => setRated(true)}
+        />
+      ) : null}
     </Card>
   );
 }
