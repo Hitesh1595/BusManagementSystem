@@ -24,6 +24,8 @@ export const usersApi = {
       .get("users/", { searchParams: cleanParams({ ...params }) })
       .json<Page<ManagedUser>>(),
 
+  get: (id: string) => api.get(`users/${id}`).json<ManagedUser>(),
+
   resetPassword: (id: string, newPassword: string) =>
     api
       .post(`users/${id}/reset-password`, { json: { new_password: newPassword } })

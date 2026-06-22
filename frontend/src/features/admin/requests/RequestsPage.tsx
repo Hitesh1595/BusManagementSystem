@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Inbox, MapPin, Sparkles } from "lucide-react";
 import { PageHeader } from "@/components/common/PageHeader";
+import { Pagination } from "@/components/common/Pagination";
 import { EmptyState } from "@/components/common/EmptyState";
 import { ErrorState, CardListSkeleton } from "@/components/common/States";
 import { RequestStatusBadge } from "@/components/common/StatusBadge";
@@ -32,6 +33,8 @@ import { cn } from "@/lib/utils";
 import { formatDistance, timeAgo } from "@/lib/format";
 import { getErrorMessage, parseApiError } from "@/lib/api/client";
 import { qk, queryClient } from "@/lib/query";
+import { usePagination } from "@/lib/hooks/usePagination";
+import { useEntityMap } from "@/lib/hooks/useEntityMap";
 import { transportRequestsApi } from "@/lib/api/transportRequests";
 import { studentsApi } from "@/lib/api/students";
 import { routesApi } from "@/lib/api/routes";
@@ -51,29 +54,26 @@ export function RequestsPage() {
   const [tab, setTab] = useState<Tab>("pending");
   const [reviewing, setReviewing] = useState<TransportRequest | null>(null);
 
+  const { limit, offset, setOffset } = usePagination(24, tab);
   const params = useMemo(
-    () => ({ status: tab === "all" ? undefined : tab, limit: 100 }),
-    [tab],
+    () => ({ status: tab === "all" ? undefined : tab, limit, offset }),
+    [tab, limit, offset],
   );
 
   const query = useQuery({
     queryKey: qk.transportRequests(params),
     queryFn: () => transportRequestsApi.list(params),
+    placeholderData: keepPreviousData,
   });
-
-  // Resolve student names in one shot (a small school's student list fits one page).
-  const studentsQuery = useQuery({
-    queryKey: qk.students({ limit: 100 }),
-    queryFn: () => studentsApi.list({ limit: 100 }),
-    staleTime: 60_000,
-  });
-  const studentMap = useMemo(() => {
-    const m = new Map<string, Student>();
-    for (const s of studentsQuery.data?.items ?? []) m.set(s.id, s);
-    return m;
-  }, [studentsQuery.data]);
 
   const items = query.data?.items ?? [];
+
+  // Resolve student names for the rows on this page (scales past one list page).
+  const studentMap = useEntityMap(
+    items.map((req) => req.student_id),
+    studentsApi.get,
+    "student",
+  );
 
   return (
     <div className="space-y-6">
@@ -114,6 +114,16 @@ export function RequestsPage() {
           ))}
         </div>
       )}
+
+      {!query.isLoading && !query.isError && items.length > 0 ? (
+        <Pagination
+          total={query.data?.total ?? 0}
+          limit={limit}
+          offset={offset}
+          onOffsetChange={setOffset}
+          isFetching={query.isFetching}
+        />
+      ) : null}
 
       {reviewing ? (
         <ReviewDialog

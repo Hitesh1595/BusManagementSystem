@@ -1,6 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import {
   AlertTriangle,
   Building2,
@@ -15,6 +20,7 @@ import {
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/common/PageHeader";
+import { Pagination } from "@/components/common/Pagination";
 import { EmptyState } from "@/components/common/EmptyState";
 import { CardListSkeleton, ErrorState } from "@/components/common/States";
 import { StatCard } from "@/components/common/StatCard";
@@ -49,6 +55,7 @@ import { schoolsApi, superAdminApi } from "@/lib/api";
 import { getErrorMessage } from "@/lib/api/client";
 import type { School } from "@/lib/api/types";
 import { qk } from "@/lib/query";
+import { usePagination } from "@/lib/hooks/usePagination";
 
 function CopyButton({ value }: { value: string }) {
   const [copied, setCopied] = useState(false);
@@ -77,10 +84,12 @@ export function SuperDashboard() {
   const qc = useQueryClient();
   const navigate = useNavigate();
 
-  const params = { limit: 100 };
+  const { limit, offset, setOffset } = usePagination(25);
+  const params = { limit, offset };
   const list = useQuery({
     queryKey: qk.schools(params),
     queryFn: () => schoolsApi.list(params),
+    placeholderData: keepPreviousData,
   });
 
   const analytics = useQuery({
@@ -219,6 +228,14 @@ export function SuperDashboard() {
               </Table>
             </CardContent>
           </Card>
+
+          <Pagination
+            total={list.data?.total ?? 0}
+            limit={limit}
+            offset={offset}
+            onOffsetChange={setOffset}
+            isFetching={list.isFetching}
+          />
         </>
       )}
 

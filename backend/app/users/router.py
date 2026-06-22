@@ -54,6 +54,21 @@ async def list_users(
     )
 
 
+@router.get("/{user_id}")
+async def get_user(
+    user_id: UUID,
+    db: DbDep,
+    claims: ClaimsDep,
+    school_id: SchoolScopeDep,
+) -> UserOut:
+    return await services.get_user(
+        db,
+        target_id=user_id,
+        requester_role=claims["role"],
+        school_scope=school_id,
+    )
+
+
 @router.post("/", status_code=201)
 async def create_user(
     body: StaffCreateIn,

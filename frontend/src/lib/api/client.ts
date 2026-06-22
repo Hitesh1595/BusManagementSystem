@@ -113,6 +113,45 @@ export interface ParsedApiError {
   code: string;
   message: string;
   details?: unknown;
+  /** field name → message, parsed from a 422 validation envelope. */
+  fieldErrors?: Record<string, string>;
+}
+
+/** One FastAPI/pydantic validation entry: { loc: [...], msg, type }. */
+interface ValidationItem {
+  loc?: Array<string | number>;
+  msg?: string;
+  type?: string;
+}
+
+function prettifyField(field: string): string {
+  const spaced = field.replace(/_/g, " ");
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+}
+
+/**
+ * Pull per-field errors out of our 422 envelope
+ * ({ error: { details: { errors: [{ loc, msg }] } } }). The leading
+ * body/query/path segment of `loc` is dropped so the key is the field name.
+ */
+function parseValidationDetails(details: unknown): {
+  summary?: string;
+  fieldErrors: Record<string, string>;
+} {
+  const fieldErrors: Record<string, string> = {};
+  let summary: string | undefined;
+  const errors = (details as { errors?: ValidationItem[] } | null | undefined)
+    ?.errors;
+  if (Array.isArray(errors)) {
+    for (const e of errors) {
+      const loc = Array.isArray(e.loc) ? e.loc : [];
+      const field = String(loc[loc.length - 1] ?? "");
+      const msg = e.msg ?? "Invalid value";
+      if (field && !(field in fieldErrors)) fieldErrors[field] = msg;
+      if (!summary) summary = field ? `${prettifyField(field)}: ${msg}` : msg;
+    }
+  }
+  return { summary, fieldErrors };
 }
 
 /** Extract the backend error envelope from a thrown ky HTTPError. */
@@ -122,12 +161,22 @@ export async function parseApiError(error: unknown): Promise<ParsedApiError> {
     try {
       const body = (await error.response.clone().json()) as ApiErrorBody;
       if (body?.error) {
-        return {
+        const parsed: ParsedApiError = {
           status,
           code: body.error.code,
           message: body.error.message,
           details: body.error.details,
         };
+        // 422: replace the generic "Invalid input" with the actual field
+        // problem(s) so toasts and forms can show what's wrong.
+        if (status === 422) {
+          const { summary, fieldErrors } = parseValidationDetails(
+            body.error.details,
+          );
+          if (Object.keys(fieldErrors).length > 0) parsed.fieldErrors = fieldErrors;
+          if (summary) parsed.message = summary;
+        }
+        return parsed;
       }
     } catch {
       /* fall through */
@@ -143,6 +192,13 @@ export async function parseApiError(error: unknown): Promise<ParsedApiError> {
 /** Convenience for toast/messages — best-effort synchronous-ish message. */
 export async function getErrorMessage(error: unknown): Promise<string> {
   return (await parseApiError(error)).message;
+}
+
+/** Per-field validation errors from a 422, for inline form display. */
+export async function getFieldErrors(
+  error: unknown,
+): Promise<Record<string, string>> {
+  return (await parseApiError(error)).fieldErrors ?? {};
 }
 
 function defaultMessage(status: number): string {

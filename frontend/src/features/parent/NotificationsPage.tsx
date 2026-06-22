@@ -1,9 +1,15 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Bell, CheckCheck } from "lucide-react";
 import { PageHeader } from "@/components/common/PageHeader";
+import { Pagination } from "@/components/common/Pagination";
 import { EmptyState } from "@/components/common/EmptyState";
 import { ErrorState, CardListSkeleton } from "@/components/common/States";
 import { Button } from "@/components/ui/button";
@@ -20,11 +26,12 @@ const PAGE_SIZE = 30;
 export function NotificationsPage() {
   const { t } = useTranslation("parent");
   const queryClient = useQueryClient();
-  const [page] = useState(1);
+  const [page, setPage] = useState(1);
 
   const query = useQuery({
     queryKey: qk.notifications({ page, page_size: PAGE_SIZE }),
     queryFn: () => notificationsApi.list({ page, page_size: PAGE_SIZE }),
+    placeholderData: keepPreviousData,
   });
 
   const invalidate = () =>
@@ -137,6 +144,16 @@ export function NotificationsPage() {
           ))}
         </div>
       )}
+
+      {!query.isLoading && !query.isError && items.length > 0 ? (
+        <Pagination
+          total={query.data?.total ?? 0}
+          limit={PAGE_SIZE}
+          offset={(page - 1) * PAGE_SIZE}
+          onOffsetChange={(o) => setPage(Math.floor(o / PAGE_SIZE) + 1)}
+          isFetching={query.isFetching}
+        />
+      ) : null}
     </div>
   );
 }

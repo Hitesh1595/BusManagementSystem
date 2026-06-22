@@ -1,10 +1,11 @@
 import { useMemo, useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Inbox } from "lucide-react";
 
 import { PageHeader } from "@/components/common/PageHeader";
+import { Pagination } from "@/components/common/Pagination";
 import { EmptyState } from "@/components/common/EmptyState";
 import { CardListSkeleton, ErrorState } from "@/components/common/States";
 import { Field } from "@/components/common/Field";
@@ -34,6 +35,8 @@ import { complaintsApi, usersApi } from "@/lib/api";
 import { getErrorMessage } from "@/lib/api/client";
 import { timeAgo } from "@/lib/format";
 import { qk, queryClient } from "@/lib/query";
+import { usePagination } from "@/lib/hooks/usePagination";
+import { useEntityMap } from "@/lib/hooks/useEntityMap";
 import type { Complaint, ComplaintStatus } from "@/lib/api/types";
 
 type Tab = "open" | "in_review" | "resolved" | "all";
@@ -57,28 +60,26 @@ export function ComplaintsPage() {
   const { t } = useTranslation("admin");
   const [tab, setTab] = useState<Tab>("open");
 
+  const { limit, offset, setOffset } = usePagination(24, tab);
   const params = useMemo(
-    () => ({ status: tab === "all" ? undefined : tab, limit: 100 }),
-    [tab],
+    () => ({ status: tab === "all" ? undefined : tab, limit, offset }),
+    [tab, limit, offset],
   );
   const query = useQuery({
     queryKey: qk.complaints(params),
     queryFn: () => complaintsApi.list(params),
+    placeholderData: keepPreviousData,
   });
-
-  const usersQuery = useQuery({
-    queryKey: qk.users({ limit: 100 }),
-    queryFn: () => usersApi.list({ limit: 100 }),
-    staleTime: 60_000,
-  });
-  const userName = useMemo(() => {
-    const m = new Map<string, string>();
-    for (const u of usersQuery.data?.items ?? []) m.set(u.id, u.full_name);
-    return m;
-  }, [usersQuery.data]);
 
   const [managing, setManaging] = useState<Complaint | null>(null);
   const items = query.data?.items ?? [];
+
+  // Resolve submitter names for the rows on this page (scales past one list page).
+  const userMap = useEntityMap(
+    items.map((c) => c.submitted_by),
+    usersApi.get,
+    "user",
+  );
 
   return (
     <div className="space-y-6">
@@ -128,7 +129,10 @@ export function ComplaintsPage() {
                   </Badge>
                 </div>
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>{userName.get(c.submitted_by) ?? t("complaints.someone", "A user")}</span>
+                  <span>
+                    {userMap.get(c.submitted_by)?.full_name ??
+                      t("complaints.someone", "A user")}
+                  </span>
                   <span>{timeAgo(c.created_at)}</span>
                 </div>
                 <Button size="sm" variant="outline" onClick={() => setManaging(c)}>
@@ -139,6 +143,16 @@ export function ComplaintsPage() {
           ))}
         </div>
       )}
+
+      {!query.isLoading && !query.isError && items.length > 0 ? (
+        <Pagination
+          total={query.data?.total ?? 0}
+          limit={limit}
+          offset={offset}
+          onOffsetChange={setOffset}
+          isFetching={query.isFetching}
+        />
+      ) : null}
 
       {managing ? (
         <ManageDialog complaint={managing} onClose={() => setManaging(null)} />

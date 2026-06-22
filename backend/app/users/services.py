@@ -88,6 +88,28 @@ async def list_users(
     )
 
 
+async def get_user(
+    db: AsyncSession,
+    *,
+    target_id: uuid.UUID,
+    requester_role: str,
+    school_scope: uuid.UUID | None,
+) -> UserOut:
+    """Fetch one user for display (name resolution on admin screens).
+
+    Own-school scope for school_admin; super_admin sees any. A school_admin
+    targeting another school gets 404 (no cross-tenant existence disclosure),
+    consistent with the list/reset paths.
+    """
+    stmt = select(User).where(User.id == target_id)
+    if requester_role == "school_admin":
+        stmt = stmt.where(User.school_id == school_scope)
+    user = (await db.execute(stmt)).scalar_one_or_none()
+    if user is None:
+        raise AppError("not_found", "User not found", status=404)
+    return UserOut.model_validate(user)
+
+
 async def admin_reset_password(
     db: AsyncSession,
     *,

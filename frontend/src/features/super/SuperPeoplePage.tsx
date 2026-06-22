@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery } from "@tanstack/react-query";
 import { Search, UserCog, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/common/PageHeader";
+import { Pagination } from "@/components/common/Pagination";
 import { AddStaffDialog, StaffRowMenu } from "@/components/common/StaffControls";
 import { EmptyState } from "@/components/common/EmptyState";
 import { CardListSkeleton, ErrorState } from "@/components/common/States";
@@ -41,6 +42,7 @@ import { getErrorMessage } from "@/lib/api/client";
 import { schoolsApi, usersApi } from "@/lib/api";
 import type { ManagedUser, Role } from "@/lib/api/types";
 import { qk } from "@/lib/query";
+import { usePagination } from "@/lib/hooks/usePagination";
 
 type RoleFilter = "all" | "school_admin" | "driver" | "parent";
 
@@ -66,15 +68,18 @@ export function SuperPeoplePage() {
     return map;
   }, [schoolsQuery.data]);
 
+  const { limit, offset, setOffset } = usePagination(25, `${role}:${school}:${q}`);
   const params = {
     role: role === "all" ? undefined : (role as Role),
     school: school === "all" ? undefined : school,
     q: q || undefined,
-    limit: 100,
+    limit,
+    offset,
   };
   const list = useQuery({
     queryKey: qk.users(params),
     queryFn: () => usersApi.list(params),
+    placeholderData: keepPreviousData,
   });
 
   // ---- Reset password ----
@@ -218,6 +223,16 @@ export function SuperPeoplePage() {
           </CardContent>
         </Card>
       )}
+
+      {!list.isLoading && !list.isError && items.length > 0 ? (
+        <Pagination
+          total={list.data?.total ?? 0}
+          limit={limit}
+          offset={offset}
+          onOffsetChange={setOffset}
+          isFetching={list.isFetching}
+        />
+      ) : null}
 
       <AddStaffDialog
         open={adding}

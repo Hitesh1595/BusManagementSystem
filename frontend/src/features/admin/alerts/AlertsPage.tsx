@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { AlertTriangle, Bell, BellOff, Check, ShieldCheck } from "lucide-react";
 import { PageHeader } from "@/components/common/PageHeader";
+import { Pagination } from "@/components/common/Pagination";
 import { EmptyState } from "@/components/common/EmptyState";
 import { ErrorState, CardListSkeleton } from "@/components/common/States";
 import { AlertSeverityBadge } from "@/components/common/StatusBadge";
@@ -22,6 +23,7 @@ import { formatDateTime, timeAgo } from "@/lib/format";
 import { getErrorMessage } from "@/lib/api/client";
 import { qk, queryClient } from "@/lib/query";
 import { alertsApi } from "@/lib/api/alerts";
+import { usePagination } from "@/lib/hooks/usePagination";
 import type { Alert, AlertSeverity, AlertType } from "@/lib/api/types";
 
 const ALERT_TYPES: AlertType[] = [
@@ -90,20 +92,26 @@ export function AlertsPage() {
 
   const beep = useCriticalBeep();
 
+  const { limit, offset, setOffset } = usePagination(
+    25,
+    `${resolved}:${type}:${severity}`,
+  );
   const params = useMemo(
     () => ({
       resolved: resolved === "resolved",
       type: type === "all" ? undefined : type,
       severity: severity === "all" ? undefined : severity,
-      limit: 100,
+      limit,
+      offset,
     }),
-    [resolved, type, severity],
+    [resolved, type, severity, limit, offset],
   );
 
   const query = useQuery({
     queryKey: qk.alerts(params),
     queryFn: () => alertsApi.list(params),
     refetchInterval: 20_000,
+    placeholderData: keepPreviousData,
   });
 
   // Detect newly-arrived critical alerts and beep.
@@ -257,6 +265,16 @@ export function AlertsPage() {
           ))}
         </div>
       )}
+
+      {!query.isLoading && !query.isError && items.length > 0 ? (
+        <Pagination
+          total={query.data?.total ?? 0}
+          limit={limit}
+          offset={offset}
+          onOffsetChange={setOffset}
+          isFetching={query.isFetching}
+        />
+      ) : null}
     </div>
   );
 }

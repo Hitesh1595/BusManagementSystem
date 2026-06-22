@@ -1,10 +1,11 @@
 import { useMemo, useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { MessageSquare } from "lucide-react";
 
 import { PageHeader } from "@/components/common/PageHeader";
+import { Pagination } from "@/components/common/Pagination";
 import { EmptyState } from "@/components/common/EmptyState";
 import { CardListSkeleton, ErrorState } from "@/components/common/States";
 import { RatingStars } from "@/components/common/RatingStars";
@@ -27,6 +28,8 @@ import { driversApi, feedbackApi } from "@/lib/api";
 import { getErrorMessage } from "@/lib/api/client";
 import { timeAgo } from "@/lib/format";
 import { qk, queryClient } from "@/lib/query";
+import { usePagination } from "@/lib/hooks/usePagination";
+import { useEntityMap } from "@/lib/hooks/useEntityMap";
 import type { TripFeedback } from "@/lib/api/types";
 
 type Tab = "flagged" | "all";
@@ -35,28 +38,26 @@ export function FeedbackPage() {
   const { t } = useTranslation("admin");
   const [tab, setTab] = useState<Tab>("flagged");
 
+  const { limit, offset, setOffset } = usePagination(24, tab);
   const params = useMemo(
-    () => ({ flagged: tab === "flagged" ? true : undefined, limit: 100 }),
-    [tab],
+    () => ({ flagged: tab === "flagged" ? true : undefined, limit, offset }),
+    [tab, limit, offset],
   );
   const query = useQuery({
     queryKey: qk.feedback(params),
     queryFn: () => feedbackApi.list(params),
+    placeholderData: keepPreviousData,
   });
-
-  const driversQuery = useQuery({
-    queryKey: qk.drivers({ limit: 100 }),
-    queryFn: () => driversApi.list({ limit: 100 }),
-    staleTime: 60_000,
-  });
-  const driverName = useMemo(() => {
-    const m = new Map<string, string>();
-    for (const d of driversQuery.data?.items ?? []) m.set(d.id, d.full_name);
-    return m;
-  }, [driversQuery.data]);
 
   const [reviewing, setReviewing] = useState<TripFeedback | null>(null);
   const items = query.data?.items ?? [];
+
+  // Resolve driver names only for the rows on this page (not a capped list scan).
+  const driverMap = useEntityMap(
+    items.map((f) => f.driver_id),
+    driversApi.get,
+    "driver",
+  );
 
   return (
     <div className="space-y-6">
@@ -107,7 +108,8 @@ export function FeedbackPage() {
                 )}
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>
-                    {t("feedback.driver", "Driver")}: {driverName.get(f.driver_id) ?? "—"}
+                    {t("feedback.driver", "Driver")}:{" "}
+                    {driverMap.get(f.driver_id)?.full_name ?? "—"}
                   </span>
                   <span>{timeAgo(f.created_at)}</span>
                 </div>
@@ -126,6 +128,16 @@ export function FeedbackPage() {
           ))}
         </div>
       )}
+
+      {!query.isLoading && !query.isError && items.length > 0 ? (
+        <Pagination
+          total={query.data?.total ?? 0}
+          limit={limit}
+          offset={offset}
+          onOffsetChange={setOffset}
+          isFetching={query.isFetching}
+        />
+      ) : null}
 
       {reviewing ? (
         <ReviewDialog feedback={reviewing} onClose={() => setReviewing(null)} />
