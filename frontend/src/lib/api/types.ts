@@ -224,6 +224,103 @@ export interface ComplaintCreatePayload {
   description: string;
 }
 
+// ---------------------------------------------------------------------------
+// Payments (fee schedules, invoices, manual payment recording)
+// ---------------------------------------------------------------------------
+
+export type BillingCycle = "one_time" | "monthly" | "quarterly" | "term" | "annual";
+export type InvoiceStatus = "draft" | "sent" | "paid" | "overdue" | "cancelled";
+
+export interface FeeSchedule {
+  id: string;
+  route_id: string | null;
+  name: string;
+  amount: number;
+  currency: string;
+  billing_cycle: BillingCycle;
+  effective_from: string;
+  effective_to: string | null;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface FeeSchedulePayload {
+  name: string;
+  amount: number;
+  billing_cycle: BillingCycle;
+  effective_from: string;
+  effective_to?: string | null;
+  route_id?: string | null;
+}
+
+export interface FeeScheduleUpdatePayload {
+  name?: string;
+  amount?: number;
+  effective_to?: string | null;
+  is_active?: boolean;
+}
+
+export interface Invoice {
+  id: string;
+  parent_id: string;
+  student_id: string;
+  fee_schedule_id: string | null;
+  amount: number;
+  status: InvoiceStatus;
+  due_date: string | null;
+  paid_at: string | null;
+  created_at: string;
+}
+
+export interface BulkGenerateResult {
+  count: number;
+  invoice_ids: string[];
+}
+
+export interface RecordPaymentPayload {
+  amount?: number;
+  receipt_no?: string;
+  gateway?: "manual" | "offline";
+}
+
+export interface RecordPaymentResult {
+  invoice_id: string;
+  payment_id: string;
+  status: string;
+  receipt_no: string | null;
+  paid_at: string | null;
+}
+
+// Platform billing (platform -> school monthly fee; super-admin only)
+export interface PlatformInvoice {
+  id: string;
+  school_id: string;
+  period: string;
+  amount: number;
+  currency: string;
+  status: InvoiceStatus;
+  due_date: string | null;
+  paid_at: string | null;
+  paid_amount: number | null;
+  receipt_no: string | null;
+  created_at: string;
+}
+
+export interface GenerateInvoicesPayload {
+  period: string;
+  default_amount: number;
+  due_date?: string | null;
+  overrides?: { school_id: string; amount: number }[];
+}
+
+export interface PlatformBillingSummary {
+  billed: number;
+  collected: number;
+  outstanding: number;
+  invoice_count: number;
+  paid_count: number;
+}
+
 export interface TokenResponse {
   access_token: string;
   user: User;

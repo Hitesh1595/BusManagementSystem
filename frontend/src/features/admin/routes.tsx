@@ -14,6 +14,7 @@ import { RoutesListPage } from "./routes/RoutesListPage";
 import { RouteEditorPage } from "./routes/RouteEditorPage";
 import { FeedbackPage } from "./feedback/FeedbackPage";
 import { ComplaintsPage } from "./complaints/ComplaintsPage";
+import { BillingPage } from "./billing/BillingPage";
 
 export const adminRoutes: RouteObject[] = [
   { index: true, element: <AdminDashboard /> },
@@ -29,4 +30,5 @@ export const adminRoutes: RouteObject[] = [
   { path: "routes/:routeId", element: <RouteEditorPage /> },
   { path: "feedback", element: <FeedbackPage /> },
   { path: "complaints", element: <ComplaintsPage /> },
+  { path: "billing", element: <BillingPage /> },
 ];

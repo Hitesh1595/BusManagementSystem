@@ -29,6 +29,7 @@ export const qk = {
   driver: (id: string) => ["driver", id] as const,
 
   users: (params?: unknown) => ["users", params ?? {}] as const,
+  user: (id: string) => ["user", id] as const,
 
   routes: (params?: unknown) => ["routes", params ?? {}] as const,
   route: (id: string) => ["route", id] as const,
@@ -54,4 +55,11 @@ export const qk = {
   feedback: (params?: unknown) => ["feedback", params ?? {}] as const,
   driverRating: ["driver-rating"] as const,
   complaints: (params?: unknown) => ["complaints", params ?? {}] as const,
+
+  feeSchedules: (params?: unknown) => ["fee-schedules", params ?? {}] as const,
+  invoices: (params?: unknown) => ["invoices", params ?? {}] as const,
+
+  platformInvoices: (params?: unknown) => ["platform-invoices", params ?? {}] as const,
+  platformBillingSummary: (period?: unknown) =>
+    ["platform-billing-summary", period ?? {}] as const,
 };

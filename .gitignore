@@ -26,3 +26,7 @@ htmlcov/
 
 # Docker / logs
 *.log
+
+# Graphify (repo-local tooling + generated graph)
+.graphify-venv/
+graphify-out/

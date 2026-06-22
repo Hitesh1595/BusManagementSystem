@@ -10,20 +10,29 @@ from __future__ import annotations
 
 import uuid
 from datetime import UTC, datetime, timedelta
+from decimal import Decimal
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.alerts.models import ALERT_SEVERITY, Alert
 from app.auth.models import User
+from app.core.pagination import paginate
 from app.errors import AppError
 from app.routes.models import Route
 from app.schools.models import School
 from app.schools.schemas import SchoolOut
 from app.students.models import Student
+from app.super_admin.models import PlatformInvoice
 from app.super_admin.schemas import (
     AlertSeverityBreakdown,
+    GenerateInvoicesIn,
+    GenerateInvoicesOut,
     PlatformAnalyticsOut,
+    PlatformBillingSummaryOut,
+    PlatformInvoiceOut,
+    PlatformInvoicePage,
+    RecordPlatformPaymentIn,
     SchoolOverviewOut,
     UsersByRole,
 )
@@ -120,4 +129,131 @@ async def platform_analytics(db: AsyncSession) -> PlatformAnalyticsOut:
         open_alerts=await _count(db, Alert, Alert.resolved_at.is_(None)),
         alerts_last_24h=await _count(db, Alert, Alert.created_at >= since_24h),
         alert_severity=await _open_alert_severity(db),
+    )
+
+
+# ---------------------------------------------------------------------------
+# Platform billing (platform → school monthly fee)
+# ---------------------------------------------------------------------------
+
+
+def _money(value: float) -> Decimal:
+    return Decimal(str(value))
+
+
+async def generate_platform_invoices(
+    db: AsyncSession, *, payload: GenerateInvoicesIn
+) -> GenerateInvoicesOut:
+    """One invoice per active school for the period (skips schools already billed)."""
+    overrides = {o.school_id: o.amount for o in payload.overrides}
+    school_ids = (
+        (await db.execute(select(School.id).where(School.is_active.is_(True))))
+        .scalars()
+        .all()
+    )
+    created = 0
+    for sid in school_ids:
+        exists = (
+            await db.execute(
+                select(PlatformInvoice.id)
+                .where(
+                    PlatformInvoice.school_id == sid,
+                    PlatformInvoice.period == payload.period,
+                )
+                .limit(1)
+            )
+        ).first()
+        if exists is not None:
+            continue
+        db.add(
+            PlatformInvoice(
+                school_id=sid,
+                period=payload.period,
+                amount=_money(overrides.get(sid, payload.default_amount)),
+                status="sent",
+                due_date=payload.due_date,
+            )
+        )
+        created += 1
+    await db.commit()
+    return GenerateInvoicesOut(period=payload.period, count=created)
+
+
+async def list_platform_invoices(
+    db: AsyncSession,
+    *,
+    period: str | None = None,
+    status: str | None = None,
+    limit: int = 50,
+    offset: int = 0,
+) -> PlatformInvoicePage:
+    stmt = select(PlatformInvoice)
+    if period is not None:
+        stmt = stmt.where(PlatformInvoice.period == period)
+    if status is not None:
+        stmt = stmt.where(PlatformInvoice.status == status)
+    stmt = stmt.order_by(
+        PlatformInvoice.period.desc(), PlatformInvoice.created_at.desc()
+    )
+    result = await paginate(stmt, db, limit=limit, offset=offset)
+    return PlatformInvoicePage(
+        items=[PlatformInvoiceOut.model_validate(i) for i in result["items"]],
+        total=result["total"],
+        limit=result["limit"],
+        offset=result["offset"],
+    )
+
+
+async def record_platform_payment(
+    db: AsyncSession,
+    *,
+    invoice_id: uuid.UUID,
+    payload: RecordPlatformPaymentIn,
+) -> PlatformInvoiceOut:
+    invoice = (
+        await db.execute(
+            select(PlatformInvoice).where(PlatformInvoice.id == invoice_id)
+        )
+    ).scalar_one_or_none()
+    if invoice is None:
+        raise AppError("not_found", "Platform invoice not found", 404)
+    if invoice.status == "paid":
+        raise AppError("conflict", "Invoice is already paid", 409)
+    if invoice.status not in ("sent", "overdue"):
+        raise AppError("conflict", "Invoice is not payable", 409)
+
+    invoice.paid_amount = (
+        _money(payload.amount) if payload.amount is not None else invoice.amount
+    )
+    invoice.receipt_no = payload.receipt_no
+    invoice.status = "paid"
+    invoice.paid_at = datetime.now(UTC)
+    await db.commit()
+    await db.refresh(invoice)
+    return PlatformInvoiceOut.model_validate(invoice)
+
+
+async def platform_billing_summary(
+    db: AsyncSession, *, period: str | None = None
+) -> PlatformBillingSummaryOut:
+    billed_stmt = select(
+        func.coalesce(func.sum(PlatformInvoice.amount), 0), func.count()
+    ).select_from(PlatformInvoice)
+    paid_stmt = (
+        select(func.coalesce(func.sum(PlatformInvoice.amount), 0), func.count())
+        .select_from(PlatformInvoice)
+        .where(PlatformInvoice.status == "paid")
+    )
+    if period is not None:
+        billed_stmt = billed_stmt.where(PlatformInvoice.period == period)
+        paid_stmt = paid_stmt.where(PlatformInvoice.period == period)
+
+    billed, invoice_count = (await db.execute(billed_stmt)).one()
+    collected, paid_count = (await db.execute(paid_stmt)).one()
+    return PlatformBillingSummaryOut(
+        billed=float(billed),
+        collected=float(collected),
+        outstanding=float(billed) - float(collected),
+        invoice_count=invoice_count,
+        paid_count=paid_count,
     )

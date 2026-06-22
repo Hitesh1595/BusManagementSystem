@@ -6,8 +6,12 @@ Read-only aggregations across all schools. super_admin only (router gate).
 
 from __future__ import annotations
 
-from pydantic import BaseModel
+import uuid
+from datetime import date, datetime
 
+from pydantic import BaseModel, ConfigDict, Field
+
+from app.core.pagination import Page
 from app.schools.schemas import SchoolOut
 
 
@@ -50,3 +54,57 @@ class PlatformAnalyticsOut(BaseModel):
     open_alerts: int
     alerts_last_24h: int
     alert_severity: AlertSeverityBreakdown
+
+
+# ---------------------------------------------------------------------------
+# Platform billing (platform → school monthly fee)
+# ---------------------------------------------------------------------------
+
+
+class PlatformInvoiceOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    school_id: uuid.UUID
+    period: str
+    amount: float
+    currency: str
+    status: str
+    due_date: date | None
+    paid_at: datetime | None
+    paid_amount: float | None
+    receipt_no: str | None
+    created_at: datetime
+
+
+PlatformInvoicePage = Page[PlatformInvoiceOut]
+
+
+class PlatformFeeOverride(BaseModel):
+    school_id: uuid.UUID
+    amount: float = Field(gt=0)
+
+
+class GenerateInvoicesIn(BaseModel):
+    period: str = Field(pattern=r"^\d{4}-\d{2}$")  # 'YYYY-MM'
+    default_amount: float = Field(gt=0)
+    due_date: date | None = None
+    overrides: list[PlatformFeeOverride] = Field(default_factory=list)
+
+
+class GenerateInvoicesOut(BaseModel):
+    period: str
+    count: int
+
+
+class RecordPlatformPaymentIn(BaseModel):
+    amount: float | None = Field(default=None, gt=0)
+    receipt_no: str | None = Field(default=None, max_length=40)
+
+
+class PlatformBillingSummaryOut(BaseModel):
+    billed: float
+    collected: float
+    outstanding: float
+    invoice_count: int
+    paid_count: int

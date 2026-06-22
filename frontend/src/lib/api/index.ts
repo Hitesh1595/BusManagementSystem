@@ -15,4 +15,5 @@ export { notificationsApi, type NotificationListParams } from "./notifications";
 export { superAdminApi } from "./superAdmin";
 export { feedbackApi, type FeedbackListParams } from "./feedback";
 export { complaintsApi, type ComplaintListParams } from "./complaints";
+export { paymentsApi, type InvoiceListParams } from "./payments";
 export type { PageParams } from "./_params";

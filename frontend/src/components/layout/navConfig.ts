@@ -13,6 +13,7 @@ import {
   Settings,
   UserCog,
   Users,
+  Wallet,
 } from "lucide-react";
 import type { Role } from "@/lib/api/types";
 
@@ -28,6 +29,7 @@ export interface NavItem {
 const parent: NavItem[] = [
   { to: "/parent", labelKey: "nav.dashboard", icon: LayoutDashboard, end: true },
   { to: "/parent/requests", labelKey: "nav.requests", icon: FileText },
+  { to: "/parent/invoices", labelKey: "nav.invoices", icon: Wallet },
   { to: "/parent/notifications", labelKey: "nav.notifications", icon: Bell },
   { to: "/parent/settings", labelKey: "nav.settings", icon: Settings },
 ];
@@ -47,11 +49,13 @@ const admin: NavItem[] = [
   { to: "/admin/users", labelKey: "nav.people", icon: UserCog },
   { to: "/admin/feedback", labelKey: "nav.feedback", icon: MessageSquare },
   { to: "/admin/complaints", labelKey: "nav.complaints", icon: Megaphone },
+  { to: "/admin/billing", labelKey: "nav.billing", icon: Wallet },
   { to: "/admin/settings", labelKey: "nav.settings", icon: Settings },
 ];
 
 const superAdmin: NavItem[] = [
   { to: "/super", labelKey: "nav.dashboard", icon: LayoutDashboard, end: true },
+  { to: "/super/billing", labelKey: "nav.billing", icon: Wallet },
   { to: "/super/users", labelKey: "nav.people", icon: UserCog },
 ];
 

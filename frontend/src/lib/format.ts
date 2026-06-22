@@ -68,6 +68,17 @@ export function formatEta(seconds: number | null | undefined): string {
   return rem ? `${hrs} hr ${rem} min` : `${hrs} hr`;
 }
 
+/** Format an INR amount: 1500 -> "₹1,500". */
+export function formatCurrency(amount: number | null | undefined): string {
+  if (amount == null || !Number.isFinite(amount)) return "—";
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(amount);
+}
+
 export function formatDistance(meters: number | null | undefined): string {
   if (meters == null || !Number.isFinite(meters)) return "—";
   if (meters < 1000) return `${Math.round(meters)} m`;
